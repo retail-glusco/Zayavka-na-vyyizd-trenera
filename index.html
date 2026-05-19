@@ -223,8 +223,29 @@
         const TELEGRAM_ID = tg?.initDataUnsafe?.user?.id || "BROWSER_TEST_MODE";
         let currentCancellingOrderId = null; 
 
-        // ВСТАВЛЕНО ВАШЕ ОСТАННЄ НОВЕ ПОСИЛАННЯ
+        // ВАШЕ АКТУАЛЬНЕ ПОСИЛАННЯ
         const WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbz1toE55e1iMsaCRN7P2Iatzk4r4es79kjUjhYb1Adj7A_JPy9rjXfdTjOKO2isPGY/exec"; 
+
+        // НОВИЙ ФІЛЬТР: Перетворює будь-яку машинну дату у красиву ДД.ММ.РР (наприклад: 21.05.26)
+        function formatToShortDate(dateString) {
+            if (!dateString) return '';
+            // Якщо це дата з Гугла (з літерою Т, напр. 2026-05-20T21:00:00.000Z)
+            if (dateString.includes('T')) {
+                let d = new Date(dateString);
+                if (!isNaN(d.getTime())) {
+                    let day = String(d.getDate()).padStart(2, '0');
+                    let month = String(d.getMonth() + 1).padStart(2, '0');
+                    let year = String(d.getFullYear()).slice(-2);
+                    return `${day}.${month}.${year}`;
+                }
+            }
+            // Якщо це дата напряму з календаря YYYY-MM-DD (напр. 2026-05-21)
+            if (dateString.includes('-') && dateString.length === 10) {
+                let parts = dateString.split('-');
+                return `${parts[2]}.${parts[1]}.${parts[0].slice(-2)}`;
+            }
+            return dateString;
+        }
 
         function getFormattedDateTime() {
             const now = new Date();
@@ -290,7 +311,10 @@
             document.getElementById('sum-azk').innerText = document.getElementById('azk-number').value;
             document.getElementById('sum-target').innerText = document.getElementById('target-name').value;
             document.getElementById('sum-target-phone').innerText = document.getElementById('target-phone').value;
-            document.getElementById('sum-visit-date').innerText = document.getElementById('visit-date').value;
+            
+            // ВАЖЛИВО: Пропускаємо дату через фільтр перед виводом на екран перевірки
+            document.getElementById('sum-visit-date').innerText = formatToShortDate(document.getElementById('visit-date').value);
+            
             document.getElementById('sum-reason').innerText = finalReason;
             document.getElementById('sum-desc').innerText = document.getElementById('desc').value;
             document.getElementById('sum-result').innerText = document.getElementById('result').value;
@@ -308,7 +332,10 @@
                 phone: localStorage.getItem('phone'),
                 azk: document.getElementById('azk-number').value,
                 priority: document.getElementById('priority').value,
-                date: document.getElementById('visit-date').value,
+                
+                // ВАЖЛИВО: Відправляємо в Гугл вже красиво відформатовану дату!
+                date: formatToShortDate(document.getElementById('visit-date').value),
+                
                 reason: finalReason,
                 target_name: document.getElementById('target-name').value,    
                 target_phone: document.getElementById('target-phone').value,  
@@ -322,7 +349,7 @@
             .then(data => {
                 let successMsg = "🚀 Заявку № " + data.orderId + " успішно прийнято!";
                 if(tg && tg.showAlert) { tg.showAlert(successMsg, function() { showPage('page-1'); }); } else { alert(successMsg); showPage('page-1'); }
-                document.getElementById('azk-number').value = ''; document.getElementById('target-name').value = ''; document.getElementById('target-phone').value = ''; document.getElementById('desc').value = ''; document.getElementById('result').value = ''; document.getElementById('priority').value = 'empty'; document.getElementById('reason').value = 'empty';
+                document.getElementById('azk-number').value = ''; document.getElementById('target-name').value = ''; document.getElementById('target-phone').value = ''; document.getElementById('desc').value = ''; document.getElementById('result').value = ''; document.getElementById('priority').value = 'empty'; document.getElementById('reason').value = 'empty'; document.getElementById('visit-date').value = '';
             })
             .catch(() => { alert("✅ Заявку успішно відправлено!"); showPage('page-1'); })
             .finally(() => { btn.innerHTML = 'Відправити<br>замовлення'; btn.disabled = false; });
@@ -368,7 +395,7 @@
                                     <div class="space-y-1 text-slate-200">
                                         <p>🚩 <span class="text-slate-400">Локація АЗК:</span> ${o.azk}</p>
                                         <p>🚻 <span class="text-slate-400">З ким працювати:</span> ${o.target_name}</p>
-                                        <p>🗓️ <span class="text-slate-400">Планована дата:</span> <span class="text-blue-300 font-bold">${o.date}</span></p>
+                                        <p>🗓️ <span class="text-slate-400">Планована дата:</span> <span class="text-blue-300 font-bold">${formatToShortDate(o.date)}</span></p>
                                         <p>🚨 <span class="text-slate-400">Пріоритет:</span> ${o.priority}</p>
                                         <p>❓ <span class="text-slate-400">Причина виклику:</span> ${o.reason}</p>
                                         <p>⁉️ <span class="text-slate-400">Опис ситуації:</span> <span class="italic text-slate-300">${o.desc}</span></p>
@@ -393,7 +420,7 @@
                                     <div class="space-y-1 text-slate-200">
                                         <p>🚩 <span class="text-slate-400">Локація АЗК:</span> ${o.azk}</p>
                                         <p>🚻 <span class="text-slate-400">З ким працювати:</span> ${o.target_name}</p>
-                                        <p>🗓️ <span class="text-slate-400">Планована дата:</span> <span class="text-blue-300 font-bold">${o.date}</span></p>
+                                        <p>🗓️ <span class="text-slate-400">Планована дата:</span> <span class="text-blue-300 font-bold">${formatToShortDate(o.date)}</span></p>
                                         <p>🚨 <span class="text-slate-400">Пріоритет:</span> ${o.priority}</p>
                                     </div>
                                     <div class="my-3 border-b border-dashed border-slate-600/50"></div>
@@ -443,7 +470,6 @@
             .then(res => res.json())
             .then(data => {
                 let alertMsg = "❌ Заявку № " + currentCancellingOrderId + " успішно скасовано!";
-                // Виправлено: коректне повернення в розділ Активні після скасування
                 if(tg && tg.showAlert) { tg.showAlert(alertMsg, function() { loadOrders('Активна'); }); } else { alert(alertMsg); loadOrders('Активна'); }
             })
             .catch(() => { alert("✅ Заявку переміщено в розділ скасованих!"); loadOrders('Активна'); });
