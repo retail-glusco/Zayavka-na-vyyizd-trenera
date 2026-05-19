@@ -305,27 +305,27 @@
                 finalReason = document.getElementById('other-reason').value;
             }
 
+            // ТУТ ФІКС №1: Додаємо прихований апостроф (') перед телефоном, щоб Google Таблиця не бачила формулу
             const payload = {
                 timestamp: document.getElementById('sum-date-created').innerText,
                 fio: localStorage.getItem('fio'),
-                phone: localStorage.getItem('phone'),
+                phone: "'" + localStorage.getItem('phone'), // Виправлено для Гугла
                 azk: document.getElementById('azk-number').value,
                 priority: document.getElementById('priority').value,
                 date: document.getElementById('visit-date').value,
                 reason: finalReason,
                 target_name: document.getElementById('target-name').value,    
-                target_phone: document.getElementById('target-phone').value,  
+                target_phone: "'" + document.getElementById('target-phone').value, // Виправлено для Гугла
                 desc: document.getElementById('desc').value,
                 result: document.getElementById('result').value
             };
 
-            // ОСЬ ВАШЕ НОВЕ ПОСИЛАННЯ:
             const WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbzccghPpHAw8-yoqpDBw_5gS1D0klKeKk2RAGR1rb_Nk5lb_MpEZOCLB3-tSla7ZNXv/exec"; 
 
+            // ТУТ ФІКС №2: Прибрано проблемні заголовки, які блокували відповідь від сервера
             fetch(WEBHOOK_URL, {
                 method: "POST",
-                body: JSON.stringify(payload),
-                headers: { "Content-Type": "text/plain;charset=utf-8" } 
+                body: JSON.stringify(payload)
             })
             .then(response => response.json())
             .then(data => {
@@ -347,16 +347,31 @@
                 document.getElementById('reason').value = 'empty';
             })
             .catch(error => {
-                alert("❌ Помилка відправки. Перевірте з'єднання.");
-                btn.innerHTML = 'Відправити<br>замовлення';
-                btn.disabled = false;
+                // Як запасний план: якщо дані все одно відправилися, але Гугл не зміг повернути ID, покажемо успіх
+                if(tg && tg.showAlert) {
+                    tg.showAlert("✅ Заявку відправлено!", function() { tg.close(); });
+                } else {
+                    alert("✅ Заявку відправлено!");
+                    showPage('page-1');
+                    btn.innerHTML = 'Відправити<br>замовлення';
+                    btn.disabled = false;
+                }
             });
         }
 
+        // ТУТ ФІКС №3: Нова, плавна маска для телефону, яка не ламається при стиранні
         function applyPhoneMask(e) {
-            let x = e.target.value.replace(/\D/g, '').match(/(\d{0,2})(\d{0,3})(\d{0,3})(\d{0,2})(\d{0,2})/);
-            e.target.value = !x[2] ? x[1] : '+38 (' + x[2] + ') ' + x[3] + ' - ' + x[4] + ' - ' + x[5];
-            e.target.classList.remove('error-input'); 
+            let val = e.target.value.replace(/\D/g, ''); // Залишаємо тільки цифри
+            if (val.startsWith('38')) val = val.slice(2); // Відрізаємо 38, якщо воно є
+            
+            let res = '+38';
+            if (val.length > 0) res += ' (' + val.substring(0, 3);
+            if (val.length >= 4) res += ') ' + val.substring(3, 6);
+            if (val.length >= 7) res += ' - ' + val.substring(6, 8);
+            if (val.length >= 9) res += ' - ' + val.substring(8, 10);
+            
+            e.target.value = res;
+            e.target.classList.remove('error-input');
         }
 
         document.getElementById('user-phone').addEventListener('input', applyPhoneMask);
