@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Польовий тренер</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .glass-input { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); color: white; transition: all 0.3s; }
+        .glass-input:focus { border-color: #3b82f6; outline: none; background: rgba(255, 255, 255, 0.08); box-shadow: 0 0 10px rgba(59, 130, 246, 0.2); }
+        .error-input { border-color: #ef4444 !important; box-shadow: 0 0 10px rgba(239, 68, 68, 0.4) !important; background: rgba(239, 68, 68, 0.05) !important; }
+        .gradient-text { background: linear-gradient(90deg, #60a5fa, #34d399); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .animate-fade { animation: fadeIn 0.3s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: translateX(0); } }
+        textarea::-webkit-scrollbar { width: 6px; }
+        textarea::-webkit-scrollbar-track { background: transparent; }
+        textarea::-webkit-scrollbar-thumb { background-color: #475569; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-[#0b1120] text-white min-h-screen p-6 font-sans flex justify-center">
+
+    <div class="w-full max-w-sm relative pb-10">
+
+        <div id="page-1" class="page-section flex flex-col items-center pt-8 animate-fade">
+            <div class="w-full text-center mb-10">
+                <h1 class="text-3xl font-bold text-white mb-2">Польовий тренер</h1>
+                <p class="gradient-text font-bold uppercase tracking-widest text-[10px]">Створення заявки на візит</p>
+            </div>
+            <div class="mb-10">
+                <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" class="w-28 h-28 mx-auto animate-bounce" alt="Trainer">
+            </div>
+            <div class="w-full space-y-4">
+                <button onclick="startNewRequest()" class="w-full p-5 rounded-2xl glass hover:bg-blue-600/20 transition-all active:scale-95 flex items-center gap-4">
+                    <span class="text-2xl">🚀</span>
+                    <span class="font-bold text-lg text-blue-100">Нова заявка</span>
+                </button>
+                <button onclick="alert('Розділ Мої заявки буде додано згодом')" class="w-full p-5 rounded-2xl glass hover:bg-green-600/20 transition-all active:scale-95 flex items-center gap-4">
+                    <span class="text-2xl">📋</span>
+                    <span class="font-bold text-lg text-slate-200">Мої заявки</span>
+                </button>
+                <button onclick="openProfileFromMenu()" class="w-full p-5 rounded-2xl glass hover:bg-purple-600/20 transition-all active:scale-95 flex items-center gap-4">
+                    <span class="text-2xl">👤</span>
+                    <span class="font-bold text-lg text-slate-200">Власний кабінет</span>
+                </button>
+            </div>
+        </div>
+
+        <div id="page-2" class="page-section hidden pt-6">
+            <div class="flex items-center mb-6">
+                <button onclick="showPage('page-1')" class="text-slate-400 hover:text-white mr-4 text-2xl">←</button>
+                <h2 class="text-2xl font-bold text-amber-400">Власний кабінет</h2>
+            </div>
+            <div class="glass p-6 rounded-2xl">
+                <p class="text-xs text-slate-400 mb-5">Введіть ваші дані один раз, щоб не заповнювати їх при кожній новій заявці.</p>
+                <label class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-1 block">Ваше ПІБ</label>
+                <input type="text" id="user-fio" placeholder="Іванов Іван Іванович" class="w-full p-4 rounded-xl mb-5 glass-input">
+                <label class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-1 block">Телефон</label>
+                <input type="tel" id="user-phone" placeholder="+38 (0__) ___ - __ - __" class="w-full p-4 rounded-xl mb-6 glass-input">
+                <button onclick="saveProfile()" class="w-full bg-blue-600 p-4 rounded-xl font-bold text-white transition-colors">
+                    Зберегти та продовжити
+                </button>
+            </div>
+        </div>
+
+        <div id="page-3" class="page-section hidden pt-6">
+            <div class="flex items-center mb-6">
+                <button onclick="showPage('page-1')" class="text-slate-400 hover:text-white mr-4 text-2xl">←</button>
+                <h2 class="text-2xl font-bold text-blue-400">Локація та дата</h2>
+            </div>
+            <div class="glass p-6 rounded-2xl space-y-6">
+                <div>
+                    <label class="text-sm font-bold text-slate-200 mb-1 block">🚩 Номер АЗК</label>
+                    <p class="text-[11px] text-slate-400 mb-2 leading-tight">Вкажіть номер АЗК, на яку треба приїхати тренеру.</p>
+                    <input type="text" id="azk-number" placeholder="Наприклад: АЗК №15" class="w-full p-4 rounded-xl glass-input">
+                </div>
+                <div>
+                    <label class="text-sm font-bold text-slate-200 mb-1 block">📅 Планована дата</label>
+                    <p class="text-[11px] text-slate-400 mb-2 leading-tight">Вкажіть плановану дату відвідування тренера АЗК.</p>
+                    <input type="date" id="visit-date" class="w-full p-4 rounded-xl glass-input text-slate-300">
+                </div>
+                <button onclick="goToPage4()" class="w-full bg-blue-600 p-4 rounded-xl font-bold text-white transition-colors">Далі</button>
+            </div>
+        </div>
+
+        <div id="page-4" class="page-section hidden pt-6">
+            <div class="flex items-center mb-6">
+                <button onclick="showPage('page-3')" class="text-slate-400 hover:text-white mr-4 text-2xl">←</button>
+                <h2 class="text-2xl font-bold text-indigo-400">Деталі виклику</h2>
+            </div>
+            <div class="glass p-5 rounded-2xl space-y-6">
+                <div>
+                    <label class="text-sm font-bold text-slate-200 mb-3 block">Пріоритет та Причина</label>
+                    <select id="priority" class="w-full p-4 rounded-xl glass-input mb-3">
+                        <option value="empty" disabled selected>Оберіть пріоритет...</option>
+                        <option value="🚨 Звичайна" class="text-black">🚨 Звичайна</option>
+                        <option value="🚨 Термінова" class="text-black">🚨 Термінова</option>
+                        <option value="🚨 Критична" class="text-black">🚨 Критична</option>
+                    </select>
+                    <select id="reason" class="w-full p-4 rounded-xl glass-input" onchange="checkOtherReason(this)">
+                        <option value="empty" disabled selected>Оберіть причину виклику...</option>
+                        <option value="Новачок 🎓" class="text-black">Новачок 🎓</option>
+                        <option value="Алгоритм 🔁" class="text-black">Алгоритм 🔁</option>
+                        <option value="Показники 📉" class="text-black">Показники 📉</option>
+                        <option value="Скарги 🗣️" class="text-black">Скарги 🗣️</option>
+                        <option value="Інше" class="text-black">Інше 🔖</option>
+                    </select>
+                    <input type="text" id="other-reason" placeholder="❓ Вкажіть причину..." class="w-full p-4 rounded-xl glass-input mt-3 hidden">
+                </div>
+                
+                <div class="border-t border-slate-600/50 pt-4">
+                    <label class="text-sm font-bold text-slate-200 mb-1 block">🧑‍🔧 З ким працювати</label>
+                    <p class="text-[11px] text-slate-400 mb-3 leading-tight">Співробітник, якому потрібен наставник</p>
+                    <input type="text" id="target-name" placeholder="Вкажіть ПІБ" class="w-full p-4 rounded-xl glass-input mb-3">
+                    <input type="tel" id="target-phone" placeholder="Телефон: +38 (0__) ___ - __ - __" class="w-full p-4 rounded-xl glass-input">
+                </div>
+                <button onclick="goToPage5()" class="w-full bg-indigo-600 p-4 rounded-xl font-bold text-white transition-colors">Далі</button>
+            </div>
+        </div>
+
+        <div id="page-5" class="page-section hidden pt-6">
+            <div class="flex items-center mb-6">
+                <button onclick="showPage('page-4')" class="text-slate-400 hover:text-white mr-4 text-2xl">←</button>
+                <h2 class="text-2xl font-bold text-orange-400">Опис ситуації</h2>
+            </div>
+            <div class="glass p-5 rounded-2xl flex flex-col h-[60vh]">
+                <label class="text-sm font-bold text-slate-200 mb-1 block">📣 Опис ситуації</label>
+                <p class="text-[11px] text-slate-400 mb-4 leading-tight">Опишіть ситуацію яка склалась максимально детально.</p>
+                <textarea id="desc" placeholder="Детальний опис..." class="w-full flex-1 p-4 rounded-xl glass-input resize-none text-base leading-relaxed"></textarea>
+                <button onclick="goToPage6()" class="w-full bg-orange-600 p-4 rounded-xl font-bold text-white transition-colors mt-4">Далі</button>
+            </div>
+        </div>
+
+        <div id="page-6" class="page-section hidden pt-6">
+            <div class="flex items-center mb-6">
+                <button onclick="showPage('page-5')" class="text-slate-400 hover:text-white mr-4 text-2xl">←</button>
+                <h2 class="text-2xl font-bold text-teal-400">Очікуваний результат</h2>
+            </div>
+            <div class="glass p-5 rounded-2xl flex flex-col h-[60vh]">
+                <label class="text-sm font-bold text-slate-200 mb-1 block">📊 Очікуваний результат</label>
+                <p class="text-[11px] text-slate-400 mb-4 leading-tight">Опишіть ваші очікування від візиту тренера.</p>
+                <textarea id="result" placeholder="Який результат потрібен..." class="w-full flex-1 p-4 rounded-xl glass-input resize-none text-base leading-relaxed"></textarea>
+                <button onclick="goToPage7()" class="w-full bg-teal-600 p-4 rounded-xl font-bold text-white transition-colors mt-4">Перевірити заявку</button>
+            </div>
+        </div>
+
+        <div id="page-7" class="page-section hidden pt-4 w-full">
+            <div class="bg-gradient-to-r from-emerald-600/20 to-teal-500/20 border border-emerald-500/30 rounded-xl p-4 mb-5 text-center shadow-lg">
+                <h2 class="text-xl font-black text-emerald-400 flex items-center justify-center gap-2"><span>📌</span> Перед відправкою</h2>
+                <p class="text-xs text-emerald-200/70 mt-1 uppercase tracking-widest">перевірте вашу заявку 👇</p>
+            </div>
+            
+            <div class="glass p-5 rounded-2xl text-sm leading-relaxed tracking-wide shadow-lg border border-emerald-500/30 break-words overflow-hidden w-full">
+                <div class="text-center font-bold text-emerald-300 mb-4">🟢 Створення заявки на візит "Польового тренера"</div>
+                
+                <div class="space-y-1.5">
+                    <div><span class="text-slate-400">🧑‍💼Замовник:</span> <span id="sum-fio" class="font-semibold text-white"></span></div>
+                    <div><span class="text-slate-400">📞Телефон:</span> <span id="sum-phone" class="font-semibold text-white"></span></div>
+                    <div><span class="text-slate-400">🗓️Дата замовлення:</span> <span id="sum-date-created" class="font-semibold text-white"></span></div>
+                    <div><span class="text-slate-400">🚨Пріоритет:</span> <span id="sum-priority" class="font-semibold text-amber-300"></span></div>
+                    <div><span class="text-slate-400">🚩Локація АЗК:</span> <span id="sum-azk" class="font-semibold text-white"></span></div>
+                    <div class="pt-1">
+                        <span class="text-slate-400">🚻З ким працювати:</span><br>
+                        <span id="sum-target" class="font-semibold text-white"></span><br>
+                        <span id="sum-target-phone" class="font-semibold text-blue-300"></span>
+                    </div>
+                </div>
+
+                <div class="my-4 border-b-2 border-dashed border-slate-600/50"></div>
+                <div class="mb-4"><span class="text-slate-400">Планована дата відвідування тренером АЗК:</span><br><span id="sum-visit-date" class="font-bold text-blue-300 text-base"></span></div>
+                
+                <div class="my-4 border-b border-slate-600/50"></div>
+                <div class="mb-4"><span class="text-slate-400">❓ Причина виклику:</span><br><span id="sum-reason" class="font-semibold text-white"></span></div>
+                
+                <div class="my-4 border-b border-slate-600/50"></div>
+                <div class="mb-4"><span class="text-slate-400">⁉️Опис ситуації:</span><br><div id="sum-desc" class="text-slate-200 mt-1 italic whitespace-pre-wrap break-words"></div></div>
+                
+                <div class="my-4 border-b border-slate-600/50"></div>
+                <div><span class="text-slate-400">📊Очікуваний результат?:</span><br><div id="sum-result" class="text-slate-200 mt-1 italic whitespace-pre-wrap break-words"></div></div>
+            </div>
+
+            <div class="flex gap-3 mt-6">
+                <button onclick="showPage('page-3')" class="flex-1 bg-red-600 hover:bg-red-500 text-white p-4 rounded-xl font-bold transition-colors shadow-lg shadow-red-600/30">
+                    Редагувати<br>замовлення
+                </button>
+                <button id="btn-submit" onclick="submitForm()" class="flex-1 bg-green-600 hover:bg-green-500 p-4 rounded-xl font-bold text-white transition-colors shadow-lg shadow-green-600/30">
+                    Відправити<br>замовлення
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const tg = window.Telegram?.WebApp;
+        if(tg) { tg.expand(); }
+
+        let isCreatingNewRequest = false;
+
+        function showPage(id) {
+            document.querySelectorAll('.page-section').forEach(p => {
+                p.classList.add('hidden'); p.classList.remove('animate-fade');
+            });
+            const targetPage = document.getElementById(id);
+            targetPage.classList.remove('hidden');
+            void targetPage.offsetWidth; 
+            targetPage.classList.add('animate-fade');
+            
+            if(id === 'page-2') {
+                document.getElementById('user-fio').value = localStorage.getItem('fio') || '';
+                document.getElementById('user-phone').value = localStorage.getItem('phone') || '';
+            }
+            if(id === 'page-7') renderSummary();
+        }
+
+        function startNewRequest() {
+            isCreatingNewRequest = true;
+            localStorage.getItem('fio') ? showPage('page-3') : showPage('page-2');
+        }
+
+        function openProfileFromMenu() {
+            isCreatingNewRequest = false;
+            showPage('page-2');
+        }
+
+        function validateFields(fieldIds) {
+            let isValid = true;
+            fieldIds.forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                
+                if (id === 'other-reason' && document.getElementById('reason').value !== 'Інше') {
+                    el.classList.remove('error-input');
+                    return; 
+                }
+                
+                let isFieldEmpty = !el.value || el.value.trim() === '' || el.value === 'empty';
+                
+                if (el.type === 'tel' && el.value.length < 23 && !isFieldEmpty) {
+                    isFieldEmpty = true; 
+                }
+                
+                if (isFieldEmpty) {
+                    el.classList.add('error-input');
+                    isValid = false;
+                } else {
+                    el.classList.remove('error-input');
+                }
+            });
+            
+            if (!isValid) {
+                if(tg && tg.showAlert) { tg.showAlert("❗️ Заповніть всі обов'язкові поля коректно!"); } 
+                else { alert("❗️ Заповніть всі обов'язкові поля коректно!"); }
+            }
+            return isValid;
+        }
+
+        function saveProfile() {
+            if (!validateFields(['user-fio', 'user-phone'])) return;
+            localStorage.setItem('fio', document.getElementById('user-fio').value.trim());
+            localStorage.setItem('phone', document.getElementById('user-phone').value.trim());
+            isCreatingNewRequest ? showPage('page-3') : showPage('page-1');
+        }
+
+        function goToPage4() { if (validateFields(['azk-number', 'visit-date'])) showPage('page-4'); }
+        function goToPage5() { if (validateFields(['priority', 'reason', 'other-reason', 'target-name', 'target-phone'])) showPage('page-5'); }
+        function goToPage6() { if (validateFields(['desc'])) showPage('page-6'); }
+        function goToPage7() { if (validateFields(['result'])) showPage('page-7'); }
+
+        function checkOtherReason(selectObj) {
+            const otherInput = document.getElementById('other-reason');
+            selectObj.value === 'Інше' ? otherInput.classList.remove('hidden') : otherInput.classList.add('hidden');
+        }
+
+        function renderSummary() {
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('uk-UA') + ' ' + now.toLocaleTimeString('uk-UA', {hour: '2-digit', minute:'2-digit'});
+            
+            let finalReason = document.getElementById('reason').value;
+            if (finalReason === 'Інше') {
+                finalReason = document.getElementById('other-reason').value;
+            }
+
+            document.getElementById('sum-fio').innerText = localStorage.getItem('fio');
+            document.getElementById('sum-phone').innerText = localStorage.getItem('phone');
+            document.getElementById('sum-date-created').innerText = dateStr;
+            document.getElementById('sum-priority').innerText = document.getElementById('priority').value;
+            document.getElementById('sum-azk').innerText = document.getElementById('azk-number').value;
+            document.getElementById('sum-target').innerText = document.getElementById('target-name').value;
+            document.getElementById('sum-target-phone').innerText = document.getElementById('target-phone').value;
+            document.getElementById('sum-visit-date').innerText = document.getElementById('visit-date').value;
+            document.getElementById('sum-reason').innerText = finalReason;
+            document.getElementById('sum-desc').innerText = document.getElementById('desc').value;
+            document.getElementById('sum-result').innerText = document.getElementById('result').value;
+        }
+
+        function submitForm() {
+            const btn = document.getElementById('btn-submit');
+            btn.innerHTML = 'Відправка...⏳';
+            btn.disabled = true;
+
+            let finalReason = document.getElementById('reason').value;
+            if (finalReason === 'Інше') {
+                finalReason = document.getElementById('other-reason').value;
+            }
+
+            const payload = {
+                timestamp: document.getElementById('sum-date-created').innerText,
+                fio: localStorage.getItem('fio'),
+                phone: localStorage.getItem('phone'),
+                azk: document.getElementById('azk-number').value,
+                priority: document.getElementById('priority').value,
+                date: document.getElementById('visit-date').value,
+                reason: finalReason,
+                target_name: document.getElementById('target-name').value,    
+                target_phone: document.getElementById('target-phone').value,  
+                desc: document.getElementById('desc').value,
+                result: document.getElementById('result').value
+            };
+
+            const WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbyX6-kX6aSYlimR00W-Sjzf8eoNHEauTTvALnqEgu8vA7CueOqBdq1mXiTNWvMBJebM/exec"; 
+
+            fetch(WEBHOOK_URL, {
+                method: "POST",
+                body: JSON.stringify(payload),
+                headers: { "Content-Type": "text/plain;charset=utf-8" } 
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(tg && tg.showAlert) {
+                    tg.showAlert("✅ Заявку № " + data.orderId + " успішно прийнято!", function() { tg.close(); });
+                } else {
+                    alert("✅ Заявку № " + data.orderId + " успішно прийнято!");
+                    showPage('page-1');
+                    btn.innerHTML = 'Відправити<br>замовлення';
+                    btn.disabled = false;
+                }
+                
+                document.getElementById('azk-number').value = '';
+                document.getElementById('target-name').value = '';
+                document.getElementById('target-phone').value = '';
+                document.getElementById('desc').value = '';
+                document.getElementById('result').value = '';
+                document.getElementById('priority').value = 'empty';
+                document.getElementById('reason').value = 'empty';
+            })
+            .catch(error => {
+                alert("❌ Помилка відправки. Перевірте з'єднання.");
+                btn.innerHTML = 'Відправити<br>замовлення';
+                btn.disabled = false;
+            });
+        }
+
+        function applyPhoneMask(e) {
+            let x = e.target.value.replace(/\D/g, '').match(/(\d{0,2})(\d{0,3})(\d{0,3})(\d{0,2})(\d{0,2})/);
+            e.target.value = !x[2] ? x[1] : '+38 (' + x[2] + ') ' + x[3] + ' - ' + x[4] + ' - ' + x[5];
+            e.target.classList.remove('error-input'); 
+        }
+
+        document.getElementById('user-phone').addEventListener('input', applyPhoneMask);
+        document.getElementById('target-phone').addEventListener('input', applyPhoneMask);
+
+        document.querySelectorAll('input, select, textarea').forEach(el => {
+            el.addEventListener('input', function() { this.classList.remove('error-input'); });
+            el.addEventListener('change', function() { this.classList.remove('error-input'); });
+        });
+    </script>
+</body>
+</html>
