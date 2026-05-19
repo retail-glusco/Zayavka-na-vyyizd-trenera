@@ -17,6 +17,8 @@
         textarea::-webkit-scrollbar { width: 6px; }
         textarea::-webkit-scrollbar-track { background: transparent; }
         textarea::-webkit-scrollbar-thumb { background-color: #475569; border-radius: 10px; }
+        .loader { border: 4px solid rgba(255, 255, 255, 0.1); border-top: 4px solid #34d399; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="bg-[#0b1120] text-white min-h-screen p-6 font-sans flex justify-center">
@@ -36,7 +38,7 @@
                     <span class="text-2xl">🚀</span>
                     <span class="font-bold text-lg text-blue-100">Нова заявка</span>
                 </button>
-                <button onclick="alert('Розділ Мої заявки буде додано згодом')" class="w-full p-5 rounded-2xl glass hover:bg-green-600/20 transition-all active:scale-95 flex items-center gap-4">
+                <button onclick="showPage('page-my-orders-menu')" class="w-full p-5 rounded-2xl glass hover:bg-green-600/20 transition-all active:scale-95 flex items-center gap-4">
                     <span class="text-2xl">📋</span>
                     <span class="font-bold text-lg text-slate-200">Мої заявки</span>
                 </button>
@@ -45,6 +47,42 @@
                     <span class="font-bold text-lg text-slate-200">Власний кабінет</span>
                 </button>
             </div>
+        </div>
+
+        <div id="page-my-orders-menu" class="page-section hidden pt-6">
+            <div class="flex items-center mb-6">
+                <button onclick="showPage('page-1')" class="text-slate-400 hover:text-white mr-4 text-2xl">←</button>
+                <h2 class="text-2xl font-bold text-emerald-400">Мої заявки</h2>
+            </div>
+            <div class="w-full space-y-4">
+                <button onclick="loadOrders('Активна')" class="w-full p-5 rounded-2xl glass hover:bg-green-600/20 transition-all active:scale-95 flex items-center gap-4 border-l-4 border-l-green-500">
+                    <span class="text-2xl">🟢</span>
+                    <span class="font-bold text-lg text-white">Активні</span>
+                </button>
+                <button onclick="loadOrders('Скасована')" class="w-full p-5 rounded-2xl glass hover:bg-red-600/20 transition-all active:scale-95 flex items-center gap-4 border-l-4 border-l-red-500">
+                    <span class="text-2xl">🔴</span>
+                    <span class="font-bold text-lg text-white">Скасовані</span>
+                </button>
+                <button onclick="loadOrders('Архів')" class="w-full p-5 rounded-2xl glass hover:bg-slate-600/20 transition-all active:scale-95 flex items-center gap-4 border-l-4 border-l-slate-400">
+                    <span class="text-2xl">📁</span>
+                    <span class="font-bold text-lg text-white">Архівні</span>
+                </button>
+            </div>
+        </div>
+
+        <div id="page-orders-list" class="page-section hidden pt-6">
+            <div class="flex items-center mb-6">
+                <button onclick="showPage('page-my-orders-menu')" class="text-slate-400 hover:text-white mr-4 text-2xl">←</button>
+                <h2 id="orders-list-title" class="text-2xl font-bold text-white">...</h2>
+            </div>
+            
+            <div id="orders-loading" class="text-center text-slate-400 py-10">
+                <div class="loader"></div>
+                <p>Шукаємо ваші заявки в базі...</p>
+            </div>
+
+            <div id="orders-container" class="space-y-4 hidden">
+                </div>
         </div>
 
         <div id="page-2" class="page-section hidden pt-6">
@@ -122,7 +160,7 @@
         <div id="page-5" class="page-section hidden pt-6">
             <div class="flex items-center mb-6">
                 <button onclick="showPage('page-4')" class="text-slate-400 hover:text-white mr-4 text-2xl">←</button>
-                <h2 class="text-2xl font-bold text-orange-400">Опис ситуації</h2>
+                <h2 class="text-2xl font-bold text-orange-400">ОписDoc ситуації</h2>
             </div>
             <div class="glass p-5 rounded-2xl flex flex-col h-[60vh]">
                 <label class="text-sm font-bold text-slate-200 mb-1 block">📣 Опис ситуації</label>
@@ -196,16 +234,16 @@
         const tg = window.Telegram?.WebApp;
         if(tg) { tg.expand(); }
 
-        let isCreatingNewRequest = false;
+        // БЕЗПЕКА: Отримуємо ID безпосередньо від Telegram
+        const TELEGRAM_ID = tg?.initDataUnsafe?.user?.id || "BROWSER_TEST_MODE";
+
+        // ОНОВЛЕНИЙ ВЕБХУК З ВАШИМ НОВИМ ПОСИЛАННЯМ
+        const WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxoqGoCtqUveGeSXC8peK8JT9BmpABJvG6GUpnQ79qCWpE8i9T9RGo5SRGYwmcIuwD0/exec"; 
 
         function showPage(id) {
-            document.querySelectorAll('.page-section').forEach(p => {
-                p.classList.add('hidden'); p.classList.remove('animate-fade');
-            });
+            document.querySelectorAll('.page-section').forEach(p => { p.classList.add('hidden'); p.classList.remove('animate-fade'); });
             const targetPage = document.getElementById(id);
-            targetPage.classList.remove('hidden');
-            void targetPage.offsetWidth; 
-            targetPage.classList.add('animate-fade');
+            targetPage.classList.remove('hidden'); void targetPage.offsetWidth; targetPage.classList.add('animate-fade');
             
             if(id === 'page-2') {
                 document.getElementById('user-fio').value = localStorage.getItem('fio') || '';
@@ -215,33 +253,24 @@
         }
 
         function startNewRequest() {
-            isCreatingNewRequest = true;
             localStorage.getItem('fio') ? showPage('page-3') : showPage('page-2');
         }
 
-        function openProfileFromMenu() {
-            isCreatingNewRequest = false;
-            showPage('page-2');
-        }
+        function openProfileFromMenu() { showPage('page-2'); }
 
         function validateFields(fieldIds) {
             let isValid = true;
             fieldIds.forEach(id => {
                 const el = document.getElementById(id);
                 if (!el) return;
-                
                 if (id === 'other-reason' && document.getElementById('reason').value !== 'Інше') {
                     el.classList.remove('error-input');
                     return; 
                 }
-                
                 let isFieldEmpty = !el.value || el.value.trim() === '' || el.value === 'empty';
-                
-                // Перевірка довжини нового формату телефону (38 050 111 11 11 = 16 символів)
                 if (el.type === 'tel' && el.value.length < 16 && !isFieldEmpty) {
                     isFieldEmpty = true; 
                 }
-                
                 if (isFieldEmpty) {
                     el.classList.add('error-input');
                     isValid = false;
@@ -249,10 +278,8 @@
                     el.classList.remove('error-input');
                 }
             });
-            
             if (!isValid) {
-                if(tg && tg.showAlert) { tg.showAlert("❗️ Заповніть всі обов'язкові поля коректно!"); } 
-                else { alert("❗️ Заповніть всі обов'язкові поля коректно!"); }
+                if(tg && tg.showAlert) tg.showAlert("❗️ Заповніть всі обов'язкові поля коректно!"); else alert("❗️ Заповніть всі обов'язкові поля!");
             }
             return isValid;
         }
@@ -261,7 +288,7 @@
             if (!validateFields(['user-fio', 'user-phone'])) return;
             localStorage.setItem('fio', document.getElementById('user-fio').value.trim());
             localStorage.setItem('phone', document.getElementById('user-phone').value.trim());
-            isCreatingNewRequest ? showPage('page-3') : showPage('page-1');
+            showPage('page-1');
         }
 
         function goToPage4() { if (validateFields(['azk-number', 'visit-date'])) showPage('page-4'); }
@@ -277,12 +304,7 @@
         function renderSummary() {
             const now = new Date();
             const dateStr = now.toLocaleDateString('uk-UA') + ' ' + now.toLocaleTimeString('uk-UA', {hour: '2-digit', minute:'2-digit'});
-            
-            let finalReason = document.getElementById('reason').value;
-            if (finalReason === 'Інше') {
-                finalReason = document.getElementById('other-reason').value;
-            }
-
+            let finalReason = document.getElementById('reason').value === 'Інше' ? document.getElementById('other-reason').value : document.getElementById('reason').value;
             document.getElementById('sum-fio').innerText = localStorage.getItem('fio');
             document.getElementById('sum-phone').innerText = localStorage.getItem('phone');
             document.getElementById('sum-date-created').innerText = dateStr;
@@ -298,47 +320,40 @@
 
         function submitForm() {
             const btn = document.getElementById('btn-submit');
-            btn.innerHTML = 'Відправка...⏳';
-            btn.disabled = true;
+            btn.innerHTML = 'Відправка...⏳'; btn.disabled = true;
 
-            let finalReason = document.getElementById('reason').value;
-            if (finalReason === 'Інше') {
-                finalReason = document.getElementById('other-reason').value;
-            }
-
+            let finalReason = document.getElementById('reason').value === 'Інше' ? document.getElementById('other-reason').value : document.getElementById('reason').value;
             const payload = {
+                action: "create",
                 timestamp: document.getElementById('sum-date-created').innerText,
                 fio: localStorage.getItem('fio'),
-                phone: localStorage.getItem('phone'), // БЕЗ АПОСТРОФІВ
+                phone: localStorage.getItem('phone'),
                 azk: document.getElementById('azk-number').value,
                 priority: document.getElementById('priority').value,
                 date: document.getElementById('visit-date').value,
                 reason: finalReason,
                 target_name: document.getElementById('target-name').value,    
-                target_phone: document.getElementById('target-phone').value, // БЕЗ АПОСТРОФІВ
+                target_phone: document.getElementById('target-phone').value,  
                 desc: document.getElementById('desc').value,
-                result: document.getElementById('result').value
+                result: document.getElementById('result').value,
+                telegram_id: TELEGRAM_ID
             };
 
-            const WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbzccghPpHAw8-yoqpDBw_5gS1D0klKeKk2RAGR1rb_Nk5lb_MpEZOCLB3-tSla7ZNXv/exec"; 
-
-            // Додав headers, щоб отримати JSON відповідь від Гугла
             fetch(WEBHOOK_URL, {
                 method: "POST",
                 body: JSON.stringify(payload),
                 headers: { "Content-Type": "text/plain;charset=utf-8" }
             })
-            .then(response => response.json())
+            .then(res => res.json())
             .then(data => {
+                let successMsg = "✅ Заявку № " + data.orderId + " успішно прийнято!";
                 if(tg && tg.showAlert) {
-                    try { tg.showAlert("✅ Заявку № " + data.orderId + " успішно прийнято!", function() { tg.close(); }); } 
-                    catch(e) { alert("✅ Заявку № " + data.orderId + " успішно прийнято!"); showPage('page-1'); }
+                    try { tg.showAlert(successMsg, function() { tg.close(); }); } 
+                    catch(e) { alert(successMsg); showPage('page-1'); }
                 } else {
-                    alert("✅ Заявку № " + data.orderId + " успішно прийнято!");
-                    showPage('page-1');
+                    alert(successMsg); showPage('page-1');
                 }
                 
-                // Очищення полів
                 document.getElementById('azk-number').value = '';
                 document.getElementById('target-name').value = '';
                 document.getElementById('target-phone').value = '';
@@ -347,36 +362,112 @@
                 document.getElementById('priority').value = 'empty';
                 document.getElementById('reason').value = 'empty';
             })
-            .catch(error => {
-                // Якщо помилка CORS або мережі, але дані пішли (fallback)
+            .catch(() => {
+                let fallbackMsg = "✅ Заявку успішно відправлено!";
                 if(tg && tg.showAlert) {
-                    try { tg.showAlert("✅ Заявку відправлено (номер в базі)!"); } 
-                    catch(e) { alert("✅ Заявку відправлено (номер в базі)!"); }
+                    try { tg.showAlert(fallbackMsg); } catch(e) { alert(fallbackMsg); }
                 } else {
-                    alert("✅ Заявку відправлено (номер в базі)!");
+                    alert(fallbackMsg);
                 }
                 showPage('page-1');
             })
             .finally(() => {
-                // ЗАЛІЗОБЕТОННЕ ПОВЕРНЕННЯ КНОПКИ В НОРМАЛЬНИЙ СТАН
                 btn.innerHTML = 'Відправити<br>замовлення';
                 btn.disabled = false;
             });
         }
 
-        // НОВИЙ ФОРМАТ ТЕЛЕФОНУ: 38 050 111 11 11
+        function loadOrders(statusFilter) {
+            const phone = localStorage.getItem('phone');
+            if (!phone) {
+                if(tg && tg.showAlert) tg.showAlert("Спочатку заповніть профіль, щоб бачити свої заявки!"); else alert("Заповніть профіль!");
+                showPage('page-2'); return;
+            }
+
+            let titleEmoji = statusFilter === 'Активна' ? '🟢' : (statusFilter === 'Скасована' ? '🔴' : '📁');
+            document.getElementById('orders-list-title').innerText = `${titleEmoji} ${statusFilter} заявки`;
+            
+            showPage('page-orders-list');
+            document.getElementById('orders-loading').classList.remove('hidden');
+            document.getElementById('orders-container').classList.add('hidden');
+            document.getElementById('orders-container').innerHTML = '';
+
+            const payload = { action: "get_orders", phone: phone, telegram_id: TELEGRAM_ID };
+
+            fetch(WEBHOOK_URL, { method: "POST", body: JSON.stringify(payload), headers: { "Content-Type": "text/plain;charset=utf-8" } })
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('orders-loading').classList.add('hidden');
+                document.getElementById('orders-container').classList.remove('hidden');
+
+                if (data.status === "success" && data.orders) {
+                    const filteredOrders = data.orders.filter(o => o.status === statusFilter);
+                    
+                    if (filteredOrders.length === 0) {
+                        document.getElementById('orders-container').innerHTML = `<p class="text-center text-slate-400 mt-10">У вас немає заявок у цій категорії.</p>`;
+                        return;
+                    }
+
+                    filteredOrders.forEach(o => {
+                        let btnHtml = '';
+                        if (statusFilter === 'Активна') {
+                            btnHtml = `<button onclick="cancelOrder('${o.orderId}')" class="w-full bg-red-600 hover:bg-red-500 text-white rounded-xl p-3 mt-4 font-bold transition shadow-lg">Скасувати заявку</button>`;
+                        }
+
+                        const card = `
+                            <div class="glass p-5 rounded-2xl border border-slate-600/50 shadow-lg break-words text-sm relative">
+                                <div class="font-bold text-emerald-400 mb-3 text-base">✅ Заявка № ${o.orderId} <br><span class="text-slate-400 text-xs font-normal">від ${o.timestamp}</span></div>
+                                <div class="space-y-1 text-slate-200">
+                                    <p>🚩 <span class="text-slate-400">Локація АЗК:</span> ${o.azk}</p>
+                                    <p>🚻 <span class="text-slate-400">З ким працювати:</span> ${o.target_name}</p>
+                                    <p>🗓️ <span class="text-slate-400">Планована дата:</span> <span class="text-blue-300 font-bold">${o.date}</span></p>
+                                    <p>🚨 <span class="text-slate-400">Пріоритет:</span> ${o.priority}</p>
+                                </div>
+                                <div class="my-3 border-b border-dashed border-slate-600/50"></div>
+                                <div class="text-slate-200">
+                                    <p>❓ <span class="text-slate-400">Причина виклику:</span> ${o.reason}</p>
+                                    <p class="mt-2 text-slate-400">⁉️ Опис ситуації:</p>
+                                    <p class="italic text-slate-300 mt-1">${o.desc}</p>
+                                </div>
+                                ${btnHtml}
+                            </div>
+                        `;
+                        document.getElementById('orders-container').innerHTML += card;
+                    });
+                }
+            })
+            .catch(() => {
+                document.getElementById('orders-loading').innerHTML = `<p class="text-red-400">Помилка завантаження. Спробуйте пізніше.</p>`;
+            });
+        }
+
+        function cancelOrder(orderId) {
+            let confirmCancel = confirm("Ви дійсно хочете скасувати заявку № " + orderId + "?");
+            if (!confirmCancel) return;
+
+            const payload = { action: "cancel_order", orderId: orderId };
+            document.getElementById('orders-container').innerHTML = `<div class="text-center text-slate-400 py-10"><div class="loader"></div><p>Скасування...</p></div>`;
+
+            fetch(WEBHOOK_URL, { method: "POST", body: JSON.stringify(payload), headers: { "Content-Type": "text/plain;charset=utf-8" } })
+            .then(res => res.json())
+            .then(data => {
+                if(tg && tg.showAlert) tg.showAlert("✅ Заявку скасовано!"); else alert("✅ Заявку скасовано!");
+                loadOrders('Warm-up');
+                loadOrders('Активна');
+            })
+            .catch(() => { alert("❌ Помилка з'єднання."); loadOrders('Активна'); });
+        }
+
         function applyPhoneMask(e) {
             let val = e.target.value.replace(/\D/g, ''); 
             if (val.startsWith('38')) val = val.slice(2); 
-            
             let res = '38';
             if (val.length > 0) res += ' ' + val.substring(0, 3);
             if (val.length >= 4) res += ' ' + val.substring(3, 6);
             if (val.length >= 7) res += ' ' + val.substring(6, 8);
             if (val.length >= 9) res += ' ' + val.substring(8, 10);
-            
             e.target.value = res.trim();
-            e.target.classList.remove('error-input'); 
+            e.target.classList.remove('error-input');
         }
 
         document.getElementById('user-phone').addEventListener('input', applyPhoneMask);
