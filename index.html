@@ -222,6 +222,7 @@
 
         const TELEGRAM_ID = tg?.initDataUnsafe?.user?.id || "BROWSER_TEST_MODE";
         let currentCancellingOrderId = null; 
+        let currentCancellingOrderDate = null; // Додано змінну для дати
 
         // ВАШЕ АКТУАЛЬНЕ ПОСИЛАННЯ
         const WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbz1toE55e1iMsaCRN7P2Iatzk4r4es79kjUjhYb1Adj7A_JPy9rjXfdTjOKO2isPGY/exec"; 
@@ -229,7 +230,6 @@
         // НОВИЙ ФІЛЬТР: Перетворює будь-яку машинну дату у красиву ДД.ММ.РР (наприклад: 21.05.26)
         function formatToShortDate(dateString) {
             if (!dateString) return '';
-            // Якщо це дата з Гугла (з літерою Т, напр. 2026-05-20T21:00:00.000Z)
             if (dateString.includes('T')) {
                 let d = new Date(dateString);
                 if (!isNaN(d.getTime())) {
@@ -239,7 +239,6 @@
                     return `${day}.${month}.${year}`;
                 }
             }
-            // Якщо це дата напряму з календаря YYYY-MM-DD (напр. 2026-05-21)
             if (dateString.includes('-') && dateString.length === 10) {
                 let parts = dateString.split('-');
                 return `${parts[2]}.${parts[1]}.${parts[0].slice(-2)}`;
@@ -312,7 +311,6 @@
             document.getElementById('sum-target').innerText = document.getElementById('target-name').value;
             document.getElementById('sum-target-phone').innerText = document.getElementById('target-phone').value;
             
-            // ВАЖЛИВО: Пропускаємо дату через фільтр перед виводом на екран перевірки
             document.getElementById('sum-visit-date').innerText = formatToShortDate(document.getElementById('visit-date').value);
             
             document.getElementById('sum-reason').innerText = finalReason;
@@ -332,10 +330,7 @@
                 phone: localStorage.getItem('phone'),
                 azk: document.getElementById('azk-number').value,
                 priority: document.getElementById('priority').value,
-                
-                // ВАЖЛИВО: Відправляємо в Гугл вже красиво відформатовану дату!
                 date: formatToShortDate(document.getElementById('visit-date').value),
-                
                 reason: finalReason,
                 target_name: document.getElementById('target-name').value,    
                 target_phone: document.getElementById('target-phone').value,  
@@ -412,7 +407,8 @@
                         } else {
                             let btnHtml = '';
                             if (statusFilter === 'Активна') {
-                                btnHtml = `<button onclick="openCancelPage('${o.orderId}')" class="w-full bg-red-600 hover:bg-red-500 text-white rounded-xl p-3 mt-4 font-bold transition shadow-lg">Скасувати заявку</button>`;
+                                // Передаємо timestamp у функцію
+                                btnHtml = `<button onclick="openCancelPage('${o.orderId}', '${o.timestamp}')" class="w-full bg-red-600 hover:bg-red-500 text-white rounded-xl p-3 mt-4 font-bold transition shadow-lg">Скасувати заявку</button>`;
                             }
                             cardHtml = `
                                 <div class="glass p-5 rounded-2xl border border-slate-600/50 shadow-lg break-words text-sm relative">
@@ -440,8 +436,10 @@
             .catch(() => { document.getElementById('orders-loading').innerHTML = `<p class="text-red-400">Помилка завантаження.</p>`; });
         }
 
-        function openCancelPage(orderId) {
+        // Оновлена функція, яка приймає дату
+        function openCancelPage(orderId, orderDate) {
             currentCancellingOrderId = orderId;
+            currentCancellingOrderDate = orderDate;
             document.getElementById('cancel-reason-text').value = '';
             document.getElementById('cancel-reason-text').classList.remove('error-input');
             showPage('page-cancel-reason');
@@ -466,13 +464,18 @@
                 cancel_reason: reasonVal
             };
 
+            // Формуємо правильний текст повідомлення
+            const alertMsg = `❌ ВАША ЗАЯВКА № ${currentCancellingOrderId} від ${currentCancellingOrderDate} - СКАСОВАНА`;
+
             fetch(WEBHOOK_URL, { method: "POST", body: JSON.stringify(payload), headers: { "Content-Type": "text/plain;charset=utf-8" } })
             .then(res => res.json())
             .then(data => {
-                let alertMsg = "❌ Заявку № " + currentCancellingOrderId + " успішно скасовано!";
                 if(tg && tg.showAlert) { tg.showAlert(alertMsg, function() { loadOrders('Активна'); }); } else { alert(alertMsg); loadOrders('Активна'); }
             })
-            .catch(() => { alert("✅ Заявку переміщено в розділ скасованих!"); loadOrders('Активна'); });
+            .catch(() => { 
+                // Виводимо правильний текст і при помилці відповіді сервера
+                if(tg && tg.showAlert) { tg.showAlert(alertMsg, function() { loadOrders('Активна'); }); } else { alert(alertMsg); loadOrders('Активна'); }
+            });
         }
 
         function applyPhoneMask(e) {
