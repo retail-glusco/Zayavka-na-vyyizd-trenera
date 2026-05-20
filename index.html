@@ -6,280 +6,102 @@
     <title>Польовий тренер</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/lucide@latest"></script>
-    
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #070B14; }
-        
-        /* Фонове світло (Ambient blobs) */
-        .blob { position: fixed; border-radius: 50%; filter: blur(100px); z-index: -1; opacity: 0.4; animation: pulse 8s infinite alternate; }
-        .blob-blue { top: -10%; left: -10%; width: 350px; height: 350px; background: rgba(59, 130, 246, 0.6); }
-        .blob-emerald { bottom: -10%; right: -10%; width: 350px; height: 350px; background: rgba(16, 185, 129, 0.4); }
-
-        @keyframes pulse { 0% { transform: scale(1); opacity: 0.3; } 100% { transform: scale(1.1); opacity: 0.5; } }
-
-        /* Преміальний Glassmorphism */
-        .glass { background: rgba(30, 41, 59, 0.4); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1); }
-        .glass-input { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); color: white; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .glass-input:focus { border-color: #3b82f6; background: rgba(15, 23, 42, 0.8); box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15); outline: none; }
-        
-        .error-input { border-color: #ef4444 !important; box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.15) !important; background: rgba(239, 68, 68, 0.05) !important; }
-        
-        /* Градієнтні тексти */
-        .gradient-text-primary { background: linear-gradient(135deg, #60a5fa, #34d399); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .gradient-text-amber { background: linear-gradient(135deg, #fbbf24, #f59e0b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        
-        .animate-fade { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        /* Скролбар */
-        textarea::-webkit-scrollbar { width: 4px; }
+        .glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .glass-input { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); color: white; transition: all 0.3s; }
+        .glass-input:focus { border-color: #3b82f6; outline: none; background: rgba(255, 255, 255, 0.08); box-shadow: 0 0 10px rgba(59, 130, 246, 0.2); }
+        .error-input { border-color: #ef4444 !important; box-shadow: 0 0 10px rgba(239, 68, 68, 0.4) !important; background: rgba(239, 68, 68, 0.05) !important; }
+        .gradient-text { background: linear-gradient(90deg, #60a5fa, #34d399); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .animate-fade { animation: fadeIn 0.3s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: translateX(0); } }
+        textarea::-webkit-scrollbar { width: 6px; }
         textarea::-webkit-scrollbar-track { background: transparent; }
-        textarea::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.2); border-radius: 10px; }
-        
-        /* Лоадер */
-        .loader { border: 3px solid rgba(255, 255, 255, 0.05); border-top: 3px solid #34d399; border-radius: 50%; width: 32px; height: 32px; animation: spin 1s linear infinite; margin: 20px auto; }
+        textarea::-webkit-scrollbar-thumb { background-color: #475569; border-radius: 10px; }
+        .loader { border: 4px solid rgba(255, 255, 255, 0.1); border-top: 4px solid #34d399; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        /* Стилізація select для dark mode */
-        select option { background-color: #0f172a; color: white; }
     </style>
 </head>
-<body class="text-white min-h-screen p-6 flex justify-center relative overflow-x-hidden">
-
-    <div class="blob blob-blue"></div>
-    <div class="blob blob-emerald"></div>
+<body class="bg-[#0b1120] text-white min-h-screen p-6 font-sans flex justify-center">
 
     <div class="w-full max-w-sm relative pb-10">
         <div id="page-1" class="page-section flex flex-col items-center pt-8 animate-fade">
             <div class="w-full text-center mb-10">
-                <div class="w-20 h-20 mx-auto mb-6 bg-gradient-to-tr from-blue-600/20 to-emerald-500/20 rounded-3xl flex items-center justify-center border border-white/10 shadow-lg shadow-blue-500/10">
-                    <i data-lucide="graduation-cap" class="w-10 h-10 text-emerald-400"></i>
-                </div>
-                <h1 class="text-3xl font-bold text-white mb-2 tracking-tight">Польовий тренер</h1>
-                <p class="gradient-text-primary font-bold uppercase tracking-[0.2em] text-[10px]">Створення заявки на візит</p>
+                <h1 class="text-3xl font-bold text-white mb-2">Польовий тренер</h1>
+                <p class="gradient-text font-bold uppercase tracking-widest text-[10px]">Створення заявки на візит</p>
             </div>
-            
+            <div class="mb-10">
+                <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" class="w-28 h-28 mx-auto animate-bounce" alt="Trainer">
+            </div>
             <div class="w-full space-y-4">
-                <button onclick="startNewRequest()" class="w-full p-5 rounded-2xl glass hover:bg-white/5 transition-all active:scale-[0.98] flex items-center justify-between group">
-                    <div class="flex items-center gap-4">
-                        <div class="p-2.5 bg-blue-500/10 rounded-xl text-blue-400 group-hover:bg-blue-500/20 transition-colors"><i data-lucide="zap"></i></div>
-                        <span class="font-semibold text-[17px] text-white">Нова заявка</span>
-                    </div>
-                    <i data-lucide="chevron-right" class="text-slate-500 w-5 h-5"></i>
+                <button onclick="startNewRequest()" class="w-full p-5 rounded-2xl glass hover:bg-blue-600/20 transition-all active:scale-95 flex items-center gap-4">
+                    <span class="text-2xl">🚀</span>
+                    <span class="font-bold text-lg text-blue-100">Нова заявка</span>
                 </button>
-                <button onclick="showPage('page-my-orders-menu')" class="w-full p-5 rounded-2xl glass hover:bg-white/5 transition-all active:scale-[0.98] flex items-center justify-between group">
-                    <div class="flex items-center gap-4">
-                        <div class="p-2.5 bg-emerald-500/10 rounded-xl text-emerald-400 group-hover:bg-emerald-500/20 transition-colors"><i data-lucide="layers"></i></div>
-                        <span class="font-semibold text-[17px] text-white">Мої заявки</span>
-                    </div>
-                    <i data-lucide="chevron-right" class="text-slate-500 w-5 h-5"></i>
+                <button onclick="showPage('page-my-orders-menu')" class="w-full p-5 rounded-2xl glass hover:bg-green-600/20 transition-all active:scale-95 flex items-center gap-4">
+                    <span class="text-2xl">📋</span>
+                    <span class="font-bold text-lg text-slate-200">Мої заявки</span>
                 </button>
-                <button onclick="openProfileFromMenu()" class="w-full p-5 rounded-2xl glass hover:bg-white/5 transition-all active:scale-[0.98] flex items-center justify-between group">
-                    <div class="flex items-center gap-4">
-                        <div class="p-2.5 bg-purple-500/10 rounded-xl text-purple-400 group-hover:bg-purple-500/20 transition-colors"><i data-lucide="user-cog"></i></div>
-                        <span class="font-semibold text-[17px] text-white">Власний кабінет</span>
-                    </div>
-                    <i data-lucide="chevron-right" class="text-slate-500 w-5 h-5"></i>
+                <button onclick="openProfileFromMenu()" class="w-full p-5 rounded-2xl glass hover:bg-purple-600/20 transition-all active:scale-95 flex items-center gap-4">
+                    <span class="text-2xl">👤</span>
+                    <span class="font-bold text-lg text-slate-200">Власний кабінет</span>
                 </button>
             </div>
         </div>
 
         <div id="page-my-orders-menu" class="page-section hidden pt-6">
-            <div class="flex items-center mb-8 gap-3">
-                <button onclick="showPage('page-1')" class="text-slate-400 hover:text-white p-2 rounded-xl glass-input active:scale-95"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
-                <h2 class="text-xl font-bold gradient-text-primary">Мої заявки</h2>
+            <div class="flex items-center mb-6">
+                <button onclick="showPage('page-1')" class="text-slate-400 hover:text-white mr-4 text-2xl">←</button>
+                <h2 class="text-2xl font-bold text-emerald-400">Мої заявки</h2>
             </div>
             <div class="w-full space-y-4">
-                <button onclick="loadOrders('Активна')" class="w-full p-5 rounded-2xl glass transition-all active:scale-[0.98] flex items-center gap-4 border-l-4 border-l-emerald-500 hover:bg-emerald-500/5">
-                    <i data-lucide="activity" class="text-emerald-400 w-6 h-6"></i>
-                    <span class="font-semibold text-[17px] text-white">Активні</span>
+                <button onclick="loadOrders('Активна')" class="w-full p-5 rounded-2xl glass hover:bg-green-600/20 transition-all active:scale-95 flex items-center gap-4 border-l-4 border-l-green-500">
+                    <span class="text-2xl">🟢</span>
+                    <span class="font-bold text-lg text-white">Активні</span>
                 </button>
-                <button onclick="loadOrders('Скасована')" class="w-full p-5 rounded-2xl glass transition-all active:scale-[0.98] flex items-center gap-4 border-l-4 border-l-red-500 hover:bg-red-500/5">
-                    <i data-lucide="x-octagon" class="text-red-400 w-6 h-6"></i>
-                    <span class="font-semibold text-[17px] text-white">Скасовані</span>
+                <button onclick="loadOrders('Скасована')" class="w-full p-5 rounded-2xl glass hover:bg-red-600/20 transition-all active:scale-95 flex items-center gap-4 border-l-4 border-l-red-500">
+                    <span class="text-2xl">🔴</span>
+                    <span class="font-bold text-lg text-white">Скасовані</span>
                 </button>
-                <button onclick="loadOrders('Архів')" class="w-full p-5 rounded-2xl glass transition-all active:scale-[0.98] flex items-center gap-4 border-l-4 border-l-slate-500 hover:bg-slate-500/5">
-                    <i data-lucide="archive" class="text-slate-400 w-6 h-6"></i>
-                    <span class="font-semibold text-[17px] text-white">Архівні</span>
+                <button onclick="loadOrders('Архів')" class="w-full p-5 rounded-2xl glass hover:bg-slate-600/20 transition-all active:scale-95 flex items-center gap-4 border-l-4 border-l-slate-400">
+                    <span class="text-2xl">📁</span>
+                    <span class="font-bold text-lg text-white">Архівні</span>
                 </button>
             </div>
         </div>
 
         <div id="page-orders-list" class="page-section hidden pt-6">
-            <div class="flex items-center mb-8 gap-3">
-                <button onclick="showPage('page-my-orders-menu')" class="text-slate-400 hover:text-white p-2 rounded-xl glass-input active:scale-95"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
-                <h2 id="orders-list-title" class="text-xl font-bold text-white flex items-center gap-2">...</h2>
+            <div class="flex items-center mb-6">
+                <button onclick="showPage('page-my-orders-menu')" class="text-slate-400 hover:text-white mr-4 text-2xl">←</button>
+                <h2 id="orders-list-title" class="text-2xl font-bold text-white">...</h2>
             </div>
-            <div id="orders-loading" class="text-center text-slate-400 py-10 glass rounded-2xl">
+            <div id="orders-loading" class="text-center text-slate-400 py-10">
                 <div class="loader"></div>
-                <p class="text-sm">Синхронізація бази...</p>
+                <p>Шукаємо ваші заявки в базі...</p>
             </div>
-            <div id="orders-container" class="space-y-5 hidden"></div>
+            <div id="orders-container" class="space-y-4 hidden"></div>
         </div>
 
         <div id="page-cancel-reason" class="page-section hidden pt-6">
-            <div class="flex items-center mb-8 gap-3">
-                <button onclick="showPage('page-orders-list')" class="text-slate-400 hover:text-white p-2 rounded-xl glass-input active:scale-95"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
-                <h2 class="text-xl font-bold text-red-400">Скасування візиту</h2>
+            <div class="flex items-center mb-6">
+                <button onclick="showPage('page-orders-list')" class="text-slate-400 hover:text-white mr-4 text-2xl">←</button>
+                <h2 class="text-2xl font-bold text-red-400">Вкажіть причину скасування</h2>
             </div>
-            <div class="glass p-6 rounded-2xl flex flex-col h-[60vh] border border-red-500/20">
-                <label class="text-sm font-semibold text-slate-300 mb-2 flex items-center gap-2"><i data-lucide="message-square-warning" class="w-4 h-4 text-slate-400"></i> Детально опишіть причину</label>
-                <textarea id="cancel-reason-text" placeholder="Причина скасування..." class="w-full flex-1 p-4 rounded-xl glass-input resize-none text-[15px] leading-relaxed"></textarea>
-                <div class="flex gap-3 mt-5">
-                    <button onclick="showPage('page-orders-list')" class="flex-1 bg-slate-700/50 hover:bg-slate-700 text-white p-4 rounded-xl font-semibold transition-colors active:scale-95">Назад</button>
-                    <button onclick="submitCancellation()" class="flex-1 bg-red-600/90 hover:bg-red-500 text-white p-4 rounded-xl font-semibold transition-colors shadow-lg shadow-red-900/50 active:scale-95">Скасувати</button>
+            <div class="glass p-5 rounded-2xl flex flex-col h-[60vh]">
+                <label class="text-sm font-bold text-slate-200 mb-1 block">Детально поясніть скасування візиту</label>
+                <textarea id="cancel-reason-text" placeholder="Вкажіть причину тут..." class="w-full flex-1 p-4 rounded-xl glass-input resize-none text-base leading-relaxed"></textarea>
+                <div class="flex gap-3 mt-4">
+                    <button onclick="showPage('page-orders-list')" class="flex-1 bg-blue-600 hover:bg-blue-500 p-4 rounded-xl font-bold text-white transition-colors">Назад</button>
+                    <button onclick="submitCancellation()" class="flex-1 bg-red-600 hover:bg-red-500 p-4 rounded-xl font-bold text-white transition-colors">Скасувати</button>
                 </div>
             </div>
         </div>
 
-        <div id="page-2" class="page-section hidden pt-6">
-            <div class="flex items-center mb-8 gap-3">
-                <button onclick="showPage('page-1')" class="text-slate-400 hover:text-white p-2 rounded-xl glass-input active:scale-95"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
-                <h2 class="text-xl font-bold text-white">Мій профіль</h2>
-            </div>
-            <div class="glass p-6 rounded-2xl relative overflow-hidden">
-                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 to-blue-500"></div>
-                <p class="text-xs text-slate-400 mb-6 leading-relaxed">Система збереже ці дані для швидкого автозаповнення в майбутніх заявках.</p>
-                <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5"><i data-lucide="user" class="w-3.5 h-3.5"></i> Ваше ПІБ</label>
-                <input type="text" id="user-fio" placeholder="Прізвище Ім'я По-батькові" class="w-full p-4 rounded-xl mb-6 glass-input text-[15px]">
-                <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5"><i data-lucide="phone" class="w-3.5 h-3.5"></i> Телефон</label>
-                <input type="tel" id="user-phone" placeholder="38 0__ ___ __ __" class="w-full p-4 rounded-xl mb-8 glass-input text-[15px]">
-                <button onclick="saveProfile()" class="w-full bg-blue-600/90 hover:bg-blue-500 p-4 rounded-xl font-semibold text-white transition-all shadow-lg shadow-blue-900/50 active:scale-95">Зберегти дані</button>
-            </div>
-        </div>
-
-        <div id="page-3" class="page-section hidden pt-6">
-            <div class="flex items-center mb-8 gap-3">
-                <button onclick="showPage('page-1')" class="text-slate-400 hover:text-white p-2 rounded-xl glass-input active:scale-95"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
-                <h2 class="text-xl font-bold text-white">Локація та дата</h2>
-            </div>
-            <div class="glass p-6 rounded-2xl space-y-6">
-                <div>
-                    <label class="text-sm font-semibold text-slate-300 mb-2 flex items-center gap-2"><i data-lucide="map-pin" class="w-4 h-4 text-blue-400"></i> Номер АЗК</label>
-                    <input type="text" id="azk-number" placeholder="Наприклад: 15" class="w-full p-4 rounded-xl glass-input text-[15px]">
-                </div>
-                <div>
-                    <label class="text-sm font-semibold text-slate-300 mb-2 flex items-center gap-2"><i data-lucide="calendar" class="w-4 h-4 text-emerald-400"></i> Бажана дата візиту</label>
-                    <input type="date" id="visit-date" class="w-full p-4 rounded-xl glass-input text-slate-300 text-[15px]" style="color-scheme: dark;">
-                </div>
-                <button onclick="goToPage4()" class="w-full bg-blue-600/90 hover:bg-blue-500 p-4 mt-2 rounded-xl font-semibold text-white transition-all shadow-lg shadow-blue-900/50 active:scale-95">Продовжити</button>
-            </div>
-        </div>
-
-        <div id="page-4" class="page-section hidden pt-6">
-            <div class="flex items-center mb-8 gap-3">
-                <button onclick="showPage('page-3')" class="text-slate-400 hover:text-white p-2 rounded-xl glass-input active:scale-95"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
-                <h2 class="text-xl font-bold text-white">Деталі виклику</h2>
-            </div>
-            <div class="glass p-6 rounded-2xl space-y-6">
-                <div>
-                    <label class="text-sm font-semibold text-slate-300 mb-2 flex items-center gap-2"><i data-lucide="alert-triangle" class="w-4 h-4 text-amber-400"></i> Пріоритет та Причина</label>
-                    <select id="priority" class="w-full p-4 rounded-xl glass-input mb-4 text-[15px] appearance-none">
-                        <option value="empty" disabled selected>Оберіть пріоритет...</option>
-                        <option value="Звичайна">Звичайна</option>
-                        <option value="Термінова">Термінова</option>
-                        <option value="Критична">Критична</option>
-                    </select>
-                    <select id="reason" class="w-full p-4 rounded-xl glass-input text-[15px] appearance-none" onchange="checkOtherReason(this)">
-                        <option value="empty" disabled selected>Причина виклику...</option>
-                        <option value="Новачок">Навчання новачка</option>
-                        <option value="Алгоритм">Відпрацювання алгоритму</option>
-                        <option value="Показники">Падіння показників</option>
-                        <option value="Скарги">Робота зі скаргами</option>
-                        <option value="Інше">Інша причина</option>
-                    </select>
-                    <div id="other-reason-container" class="hidden mt-4 animate-fade">
-                        <input type="text" id="other-reason" placeholder="Опишіть вашу причину..." class="w-full p-4 rounded-xl glass-input text-[15px]">
-                    </div>
-                </div>
-                <div class="border-t border-white/10 pt-5">
-                    <label class="text-sm font-semibold text-slate-300 mb-2 flex items-center gap-2"><i data-lucide="users" class="w-4 h-4 text-purple-400"></i> З ким працювати</label>
-                    <input type="text" id="target-name" placeholder="ПІБ співробітника" class="w-full p-4 rounded-xl glass-input mb-3 text-[15px]">
-                    <input type="tel" id="target-phone" placeholder="Телефон: 38 0__ ___ __ __" class="w-full p-4 rounded-xl glass-input text-[15px]">
-                    <p class="text-[11px] text-slate-500 mt-2 flex gap-1"><i data-lucide="info" class="w-3.5 h-3.5 flex-shrink-0"></i> Не обов'язково, але пришвидшить комунікацію</p>
-                </div>
-                <button onclick="goToPage5()" class="w-full bg-blue-600/90 hover:bg-blue-500 p-4 rounded-xl font-semibold text-white transition-all shadow-lg shadow-blue-900/50 active:scale-95">Продовжити</button>
-            </div>
-        </div>
-
-        <div id="page-5" class="page-section hidden pt-6">
-            <div class="flex items-center mb-8 gap-3">
-                <button onclick="showPage('page-4')" class="text-slate-400 hover:text-white p-2 rounded-xl glass-input active:scale-95"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
-                <h2 class="text-xl font-bold text-white">Опис ситуації</h2>
-            </div>
-            <div class="glass p-6 rounded-2xl flex flex-col h-[60vh]">
-                <label class="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2"><i data-lucide="text-align-left" class="w-4 h-4 text-slate-400"></i> Що саме відбулось?</label>
-                <textarea id="desc" placeholder="Детально опишіть ситуацію на АЗК..." class="w-full flex-1 p-4 rounded-xl glass-input resize-none text-[15px] leading-relaxed"></textarea>
-                <button onclick="goToPage6()" class="w-full bg-blue-600/90 hover:bg-blue-500 p-4 rounded-xl font-semibold text-white transition-all shadow-lg shadow-blue-900/50 active:scale-95 mt-5">Продовжити</button>
-            </div>
-        </div>
-
-        <div id="page-6" class="page-section hidden pt-6">
-            <div class="flex items-center mb-8 gap-3">
-                <button onclick="showPage('page-5')" class="text-slate-400 hover:text-white p-2 rounded-xl glass-input active:scale-95"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
-                <h2 class="text-xl font-bold text-white">Очікування</h2>
-            </div>
-            <div class="glass p-6 rounded-2xl flex flex-col h-[60vh]">
-                <label class="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2"><i data-lucide="target" class="w-4 h-4 text-emerald-400"></i> Який результат потрібен?</label>
-                <textarea id="result" placeholder="Опишіть ідеальне вирішення ситуації..." class="w-full flex-1 p-4 rounded-xl glass-input resize-none text-[15px] leading-relaxed"></textarea>
-                <button onclick="goToPage7()" class="w-full bg-emerald-600/90 hover:bg-emerald-500 p-4 rounded-xl font-semibold text-white transition-all shadow-lg shadow-emerald-900/50 active:scale-95 mt-5">Перевірити заявку</button>
-            </div>
-        </div>
-
-        <div id="page-7" class="page-section hidden pt-6 w-full pb-10">
-            <div class="flex items-center mb-6 gap-3">
-                <button onclick="showPage('page-6')" class="text-slate-400 hover:text-white p-2 rounded-xl glass-input active:scale-95"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
-                <h2 class="text-xl font-bold text-white">Підтвердження</h2>
-            </div>
-            
-            <div class="glass p-6 rounded-2xl text-[14px] leading-relaxed shadow-lg relative overflow-hidden w-full">
-                <div class="absolute top-0 left-0 w-full h-1 bg-emerald-500"></div>
-                
-                <div class="flex items-center gap-3 mb-6">
-                    <div class="p-2 bg-emerald-500/20 rounded-lg"><i data-lucide="clipboard-check" class="text-emerald-400 w-5 h-5"></i></div>
-                    <span class="font-bold text-lg text-emerald-300">Заявка на візит тренера</span>
-                </div>
-
-                <div class="space-y-2 mb-6">
-                    <div class="flex justify-between border-b border-white/5 pb-2"><span class="text-slate-400">Замовник</span> <span id="sum-fio" class="font-medium text-white text-right"></span></div>
-                    <div class="flex justify-between border-b border-white/5 pb-2"><span class="text-slate-400">Телефон</span> <span id="sum-phone" class="font-medium text-white"></span></div>
-                    <div class="flex justify-between border-b border-white/5 pb-2"><span class="text-slate-400">Створено</span> <span id="sum-date-created" class="font-medium text-white"></span></div>
-                    <div class="flex justify-between border-b border-white/5 pb-2"><span class="text-slate-400">Пріоритет</span> <span id="sum-priority" class="font-semibold text-amber-400"></span></div>
-                    <div class="flex justify-between border-b border-white/5 pb-2"><span class="text-slate-400">Локація АЗК</span> <span id="sum-azk" class="font-medium text-white"></span></div>
-                    <div class="flex justify-between border-b border-white/5 pb-2"><span class="text-slate-400">Дата візиту</span> <span id="sum-visit-date" class="font-bold text-blue-400"></span></div>
-                </div>
-
-                <div class="bg-white/5 p-4 rounded-xl border border-white/5 mb-5">
-                    <span class="text-xs text-slate-400 uppercase tracking-wider font-semibold block mb-1">Співробітник</span>
-                    <div id="sum-target" class="font-medium text-white"></div>
-                    <div id="sum-target-phone" class="text-slate-300 text-sm mt-0.5"></div>
-                </div>
-
-                <div class="space-y-5">
-                    <div>
-                        <span class="text-xs text-slate-400 uppercase tracking-wider font-semibold flex items-center gap-1.5 mb-1"><i data-lucide="help-circle" class="w-3.5 h-3.5"></i> Причина</span>
-                        <div id="sum-reason" class="font-medium text-white bg-white/5 p-3 rounded-lg border border-white/5"></div>
-                    </div>
-                    <div>
-                        <span class="text-xs text-slate-400 uppercase tracking-wider font-semibold flex items-center gap-1.5 mb-1"><i data-lucide="text" class="w-3.5 h-3.5"></i> Опис ситуації</span>
-                        <div id="sum-desc" class="text-slate-200 mt-1 whitespace-pre-wrap break-words leading-relaxed text-[15px]"></div>
-                    </div>
-                    <div>
-                        <span class="text-xs text-slate-400 uppercase tracking-wider font-semibold flex items-center gap-1.5 mb-1"><i data-lucide="target" class="w-3.5 h-3.5"></i> Очікування</span>
-                        <div id="sum-result" class="text-slate-200 mt-1 whitespace-pre-wrap break-words leading-relaxed text-[15px]"></div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="flex gap-3 mt-6">
-                <button onclick="showPage('page-3')" class="flex-1 bg-slate-700/50 hover:bg-slate-700 text-white p-4 rounded-xl font-semibold transition-colors active:scale-95">Редагувати</button>
-                <button id="btn-submit" onclick="submitForm()" class="flex-1 bg-emerald-600/90 hover:bg-emerald-500 p-4 rounded-xl font-semibold text-white transition-all shadow-lg shadow-emerald-900/50 active:scale-95 flex justify-center items-center gap-2">
-                    <i data-lucide="send" class="w-5 h-5"></i> Відправити
-                </button>
-            </div>
-        </div>
+        <div id="page-2" class="page-section hidden pt-6"><div class="flex items-center mb-6"><button onclick="showPage('page-1')" class="text-slate-400 hover:text-white mr-4 text-2xl">←</button><h2 class="text-2xl font-bold text-amber-400">Власний кабінет</h2></div><div class="glass p-6 rounded-2xl"><p class="text-xs text-slate-400 mb-5">Введіть ваші дані один раз, щоб не заповнювати їх при кожній новій заявці.</p><label class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-1 block">Ваше ПІБ</label><input type="text" id="user-fio" placeholder="Іванов Іван Іванович" class="w-full p-4 rounded-xl mb-5 glass-input"><label class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-1 block">Телефон</label><input type="tel" id="user-phone" placeholder="38 0__ ___ __ __" class="w-full p-4 rounded-xl mb-6 glass-input"><button onclick="saveProfile()" class="w-full bg-blue-600 p-4 rounded-xl font-bold text-white transition-colors">Зберегти та продовжити</button></div></div>
+        <div id="page-3" class="page-section hidden pt-6"><div class="flex items-center mb-6"><button onclick="showPage('page-1')" class="text-slate-400 hover:text-white mr-4 text-2xl">←</button><h2 class="text-2xl font-bold text-blue-400">Локація та дата</h2></div><div class="glass p-6 rounded-2xl space-y-6"><div><label class="text-sm font-bold text-slate-200 mb-1 block">🚩 Номер АЗК</label><input type="text" id="azk-number" placeholder="Наприклад: 15" class="w-full p-4 rounded-xl glass-input"></div><div><label class="text-sm font-bold text-slate-200 mb-1 block">📅  Планована дата</label><input type="date" id="visit-date" class="w-full p-4 rounded-xl glass-input text-slate-300" style="color-scheme: dark;"></div><button onclick="goToPage4()" class="w-full bg-blue-600 p-4 rounded-xl font-bold text-white transition-colors">Далі</button></div></div>
+        <div id="page-4" class="page-section hidden pt-6"><div class="flex items-center mb-6"><button onclick="showPage('page-3')" class="text-slate-400 hover:text-white mr-4 text-2xl">←</button><h2 class="text-2xl font-bold text-indigo-400">Деталі виклику</h2></div><div class="glass p-5 rounded-2xl space-y-6"><div><label class="text-sm font-bold text-slate-200 mb-3 block">Пріоритет та Причина</label><select id="priority" class="w-full p-4 rounded-xl glass-input mb-3"><option value="empty" disabled selected>Оберіть пріоритет...</option><option value="🚨 Звичайна" class="text-black">🚨 Звичайна</option><option value="🚨 Термінова" class="text-black">🚨 Термінова</option><option value="🚨 Критична" class="text-black">🚨 Критична</option></select><select id="reason" class="w-full p-4 rounded-xl glass-input" onchange="checkOtherReason(this)"><option value="empty" disabled selected>Оберіть причину виклику...</option><option value="Новачок 🎓" class="text-black">Новачок 🎓</option><option value="Алгоритм 🔁" class="text-black">Алгоритм 🔁</option><option value="Показники 📉" class="text-black">Показники 📉</option><option value="Скарги 🗣️" class="text-black">Скарги 🗣️</option><option value="Інше" class="text-black">Інше 🔖</option></select><div id="other-reason-container" class="hidden mt-3"><label class="text-[11px] font-bold text-slate-400 mb-1 block">❓ Інше</label><input type="text" id="other-reason" placeholder="Опишіть причину виклику..." class="w-full p-4 rounded-xl glass-input"></div></div><div class="border-t border-slate-600/50 pt-4"><label class="text-sm font-bold text-slate-200 mb-1 block">🧑‍🔧 З ким працювати</label><input type="text" id="target-name" placeholder="Вкажіть ПІБ" class="w-full p-4 rounded-xl glass-input mb-3"><p class="text-[11px] text-slate-400 mb-1 leading-tight">ℹ️ Не обов'язково, але просимо вказати за наявності:</p><input type="tel" id="target-phone" placeholder="Телефон: 38 0__ ___ __ __" class="w-full p-4 rounded-xl glass-input"></div><button onclick="goToPage5()" class="w-full bg-indigo-600 p-4 rounded-xl font-bold text-white transition-colors">Далі</button></div></div>
+        <div id="page-5" class="page-section hidden pt-6"><div class="flex items-center mb-6"><button onclick="showPage('page-4')" class="text-slate-400 hover:text-white mr-4 text-2xl">←</button><h2 class="text-2xl font-bold text-orange-400">Опис ситуації</h2></div><div class="glass p-5 rounded-2xl flex flex-col h-[60vh]"><textarea id="desc" placeholder="Детальний опис..." class="w-full flex-1 p-4 rounded-xl glass-input resize-none text-base leading-relaxed"></textarea><button onclick="goToPage6()" class="w-full bg-orange-600 p-4 rounded-xl font-bold text-white transition-colors mt-4">Далі</button></div></div>
+        <div id="page-6" class="page-section hidden pt-6"><div class="flex items-center mb-6"><button onclick="showPage('page-5')" class="text-slate-400 hover:text-white mr-4 text-2xl">←</button><h2 class="text-2xl font-bold text-teal-400">Очікуваний результат</h2></div><div class="glass p-5 rounded-2xl flex flex-col h-[60vh]"><textarea id="result" placeholder="Який результат потрібен..." class="w-full flex-1 p-4 rounded-xl glass-input resize-none text-base leading-relaxed"></textarea><button onclick="goToPage7()" class="w-full bg-teal-600 p-4 rounded-xl font-bold text-white transition-colors mt-4">Перевірити заявку</button></div></div>
+        <div id="page-7" class="page-section hidden pt-4 w-full"><div class="bg-gradient-to-r from-emerald-600/20 to-teal-500/20 border border-emerald-500/30 rounded-xl p-4 mb-5 text-center shadow-lg"><h2 class="text-xl font-black text-emerald-400 flex items-center justify-center gap-2"><span>📌</span> Перед відправкою</h2></div><div class="glass p-5 rounded-2xl text-sm leading-relaxed tracking-wide shadow-lg border border-emerald-500/30 break-words overflow-hidden w-full"><div class="text-center font-bold text-emerald-300 mb-4">🟢 Створення заявки на візит "Польового тренера"</div><div class="space-y-1.5"><div><span class="text-slate-400">🧑‍💼Замовник:</span> <span id="sum-fio" class="font-semibold text-white"></span></div><div><span class="text-slate-400">📞Телефон:</span> <span id="sum-phone" class="font-semibold text-white"></span></div><div><span class="text-slate-400">🗓️Дата замовлення:</span> <span id="sum-date-created" class="font-semibold text-white"></span></div><div><span class="text-slate-400">🚨Пріоритет:</span> <span id="sum-priority" class="font-semibold text-amber-300"></span></div><div><span class="text-slate-400">🚩Локація АЗК:</span> <span id="sum-azk" class="font-semibold text-white"></span></div><div class="pt-1"><span class="text-slate-400">🚻З ким працювати:</span><br><span id="sum-target" class="font-semibold text-white"></span><br><span id="sum-target-phone" class="font-semibold text-blue-300"></span></div></div><div class="my-4 border-b-2 border-dashed border-slate-600/50"></div><div class="mb-4"><span class="text-slate-400">Планована дата відвідування тренером АЗК:</span><br><span id="sum-visit-date" class="font-bold text-blue-300 text-base"></span></div><div class="my-4 border-b border-slate-600/50"></div><div class="mb-4"><span class="text-slate-400">❓ Причина виклику:</span><br><span id="sum-reason" class="font-semibold text-white"></span></div><div class="my-4 border-b border-slate-600/50"></div><div class="mb-4"><span class="text-slate-400">⁉️Опис ситуації:</span><br><div id="sum-desc" class="text-slate-200 mt-1 italic whitespace-pre-wrap break-words"></div></div><div class="my-4 border-b border-slate-600/50"></div><div><span class="text-slate-400">📊Очікуваний результат?:</span><br><div id="sum-result" class="text-slate-200 mt-1 italic whitespace-pre-wrap break-words"></div></div></div><div class="flex gap-3 mt-6"><button onclick="showPage('page-3')" class="flex-1 bg-red-600 hover:bg-red-500 text-white p-4 rounded-xl font-bold transition-colors shadow-lg shadow-red-600/30">Редагувати</button><button id="btn-submit" onclick="submitForm()" class="flex-1 bg-green-600 hover:bg-green-500 p-4 rounded-xl font-bold text-white transition-colors shadow-lg shadow-green-600/30">Відправити<br>замовлення</button></div></div>
     </div>
 
     <script>
@@ -288,21 +110,8 @@
         const TELEGRAM_ID = tg?.initDataUnsafe?.user?.id || "BROWSER_TEST_MODE";
         let currentCancellingOrderId = null; 
 
-        // Haptic Feedback Helper
-        function vibrate(style = 'light') {
-            if (tg && tg.HapticFeedback) {
-                if (style === 'error' || style === 'success' || style === 'warning') {
-                    tg.HapticFeedback.notificationOccurred(style);
-                } else {
-                    tg.HapticFeedback.impactOccurred(style);
-                }
-            }
-        }
-
+        // ОНОВЛЕНО: ВСТАВЛЕНО ВАШ ОСТАННІЙ НОВИЙ ВЕБ-ХУК
         const WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbyfrZytYdOyiikAqJgctwGokjdr_HKze3lxw3_4eCYE2x1u74nLR9GEXtyYU73PM9vO/exec"; 
-
-        // Initialize Icons
-        lucide.createIcons();
 
         function getFormattedDateTime() {
             const now = new Date();
@@ -331,7 +140,6 @@
         }
 
         function showPage(id) {
-            vibrate('light');
             document.querySelectorAll('.page-section').forEach(p => { p.classList.add('hidden'); p.classList.remove('animate-fade'); });
             const targetPage = document.getElementById(id);
             targetPage.classList.remove('hidden'); void targetPage.offsetWidth; targetPage.classList.add('animate-fade');
@@ -340,8 +148,6 @@
                 document.getElementById('user-phone').value = localStorage.getItem('phone') || '';
             }
             if(id === 'page-7') renderSummary();
-            // Re-render icons dynamically shown pages
-            lucide.createIcons();
         }
 
         function startNewRequest() { localStorage.getItem('fio') ? showPage('page-3') : showPage('page-2'); }
@@ -357,10 +163,7 @@
                 if (el.type === 'tel' && el.value.length < 16 && !isFieldEmpty) isFieldEmpty = true; 
                 if (isFieldEmpty) { el.classList.add('error-input'); isValid = false; } else { el.classList.remove('error-input'); }
             });
-            if (!isValid) { 
-                vibrate('error');
-                if(tg && tg.showAlert) tg.showAlert("❗️ Заповніть всі обов'язкові поля коректно!"); else alert("❗️ Заповніть всі обов'язкові поля!"); 
-            }
+            if (!isValid) { if(tg && tg.showAlert) tg.showAlert("❗️ Заповніть всі обов'язкові поля коректно!"); else alert("❗️ Заповніть всі обов'язкові поля!"); }
             return isValid;
         }
 
@@ -378,7 +181,6 @@
             let phoneEl = document.getElementById('target-phone');
             if (phoneEl.value.trim() !== '' && phoneEl.value.length < 16) {
                 phoneEl.classList.add('error-input');
-                vibrate('error');
                 if(tg && tg.showAlert) tg.showAlert("❗️ Номер співробітника введено не повністю. Залиште порожнім або введіть до кінця!"); 
                 else alert("❗️ Номер співробітника введено не повністю. Залиште порожнім або введіть до кінця!");
                 return;
@@ -395,7 +197,9 @@
             selectObj.value === 'Інше' ? container.classList.remove('hidden') : container.classList.add('hidden');
         }
 
-        document.getElementById('reason').addEventListener('change', function() { checkOtherReason(this); });
+        document.getElementById('reason').addEventListener('change', function() {
+            checkOtherReason(this);
+        });
 
         function renderSummary() {
             let finalReason = document.getElementById('reason').value === 'Інше' ? document.getElementById('other-reason').value : document.getElementById('reason').value;
@@ -407,7 +211,7 @@
             document.getElementById('sum-target').innerText = document.getElementById('target-name').value;
             
             let tPhone = document.getElementById('target-phone').value;
-            document.getElementById('sum-target-phone').innerText = tPhone ? tPhone : "Телефон не вказано";
+            document.getElementById('sum-target-phone').innerText = tPhone ? tPhone : "Не вказано";
             
             document.getElementById('sum-visit-date').innerText = formatToShortDate(document.getElementById('visit-date').value);
             document.getElementById('sum-reason').innerText = finalReason;
@@ -416,14 +220,12 @@
         }
 
         function submitForm() {
-            vibrate('medium');
             const btn = document.getElementById('btn-submit');
-            btn.innerHTML = '<div class="loader !w-5 !h-5 !border-2 !m-0 !border-white/20 !border-t-white"></div> Відправка...'; 
-            btn.disabled = true;
+            btn.innerHTML = 'Відправка...⏳'; btn.disabled = true;
             let finalReason = document.getElementById('reason').value === 'Інше' ? document.getElementById('other-reason').value : document.getElementById('reason').value;
             
             const payload = {
-                action: "create_order", // Оновлено згідно вашого GAS
+                action: "create",
                 timestamp: document.getElementById('sum-date-created').innerText,
                 fio: localStorage.getItem('fio'),
                 phone: localStorage.getItem('phone'),
@@ -431,41 +233,33 @@
                 priority: document.getElementById('priority').value,
                 date: formatToShortDate(document.getElementById('visit-date').value),
                 reason: finalReason,
-                target_name: document.getElementById('target-name').value,  
+                target_name: document.getElementById('target-name').value,    
                 target_phone: document.getElementById('target-phone').value,  
                 desc: document.getElementById('desc').value,
                 result: document.getElementById('result').value,
                 telegram_id: TELEGRAM_ID
             };
 
-            // ФІКС ЗАВИСАННЯ: redirect: "follow"
-            fetch(WEBHOOK_URL, { method: "POST", body: JSON.stringify(payload), headers: { "Content-Type": "text/plain;charset=utf-8" }, redirect: "follow" })
+            fetch(WEBHOOK_URL, { method: "POST", body: JSON.stringify(payload), headers: { "Content-Type": "text/plain;charset=utf-8" } })
             .then(res => res.json())
             .then(data => {
-                vibrate('success');
-                let successMsg = "✅ Заявку № " + (data.orderId || '') + " успішно прийнято!";
+                let successMsg = "🚀 Заявку № " + data.orderId + " успішно прийнято!";
                 if(tg && tg.showAlert) { tg.showAlert(successMsg, function() { showPage('page-1'); }); } else { alert(successMsg); showPage('page-1'); }
                 document.getElementById('azk-number').value = ''; document.getElementById('target-name').value = ''; document.getElementById('target-phone').value = ''; document.getElementById('desc').value = ''; document.getElementById('result').value = ''; document.getElementById('priority').value = 'empty'; document.getElementById('reason').value = 'empty'; document.getElementById('visit-date').value = '';
             })
-            .catch(() => { 
-                vibrate('success'); // Навіть при помилці парсингу GAS записує, вважаємо успіхом як фолбек
-                alert("✅ Заявку успішно відправлено!"); showPage('page-1'); 
-            })
-            .finally(() => { 
-                btn.innerHTML = '<i data-lucide="send" class="w-5 h-5"></i> Відправити'; btn.disabled = false; lucide.createIcons();
-            });
+            .catch(() => { alert("✅ Заявку успішно відправлено!"); showPage('page-1'); })
+            .finally(() => { btn.innerHTML = 'Відправити<br>замовлення'; btn.disabled = false; });
         }
 
         function loadOrders(statusFilter) {
             const phone = localStorage.getItem('phone');
             if (!phone) {
-                vibrate('warning');
                 if(tg && tg.showAlert) tg.showAlert("Спочатку заповніть профіль, щоб бачити свої заявки!"); else alert("Заповніть профіль!");
                 showPage('page-2'); return;
             }
 
-            let titleIcon = statusFilter === 'Active' || statusFilter === 'Активна' ? '<i data-lucide="activity" class="text-emerald-400"></i>' : (statusFilter === 'Скасована' ? '<i data-lucide="x-octagon" class="text-red-400"></i>' : '<i data-lucide="archive" class="text-slate-400"></i>');
-            document.getElementById('orders-list-title').innerHTML = `${titleIcon} ${statusFilter}`;
+            let titleEmoji = statusFilter === 'Active' || statusFilter === 'Активна' ? '🟢' : (statusFilter === 'Скасована' ? '🔴' : '📁');
+            document.getElementById('orders-list-title').innerText = `${titleEmoji} ${statusFilter} заявки`;
             
             showPage('page-orders-list');
             document.getElementById('orders-loading').classList.remove('hidden');
@@ -474,8 +268,7 @@
 
             const payload = { action: "get_orders", phone: phone, telegram_id: TELEGRAM_ID };
 
-            // ФІКС ЗАВИСАННЯ: redirect: "follow"
-            fetch(WEBHOOK_URL, { method: "POST", body: JSON.stringify(payload), headers: { "Content-Type": "text/plain;charset=utf-8" }, redirect: "follow" })
+            fetch(WEBHOOK_URL, { method: "POST", body: JSON.stringify(payload), headers: { "Content-Type": "text/plain;charset=utf-8" } })
             .then(res => res.json())
             .then(data => {
                 document.getElementById('orders-loading').classList.add('hidden');
@@ -484,66 +277,56 @@
                 if (data.status === "success" && data.orders) {
                     const filteredOrders = data.orders.filter(o => o.status === statusFilter);
                     if (filteredOrders.length === 0) {
-                        document.getElementById('orders-container').innerHTML = `
-                            <div class="text-center text-slate-400 mt-10 p-6 glass rounded-2xl flex flex-col items-center">
-                                <i data-lucide="folder-open" class="w-12 h-12 mb-3 opacity-50"></i>
-                                <p>У вас немає заявок у цій категорії.</p>
-                            </div>`;
-                        lucide.createIcons();
+                        document.getElementById('orders-container').innerHTML = `<p class="text-center text-slate-400 mt-10">У вас немає заявок у цій категорії.</p>`;
                         return;
                     }
 
                     filteredOrders.forEach(o => {
                         let cardHtml = '';
-                        let tPhoneDisplay = o.target_phone && o.target_phone !== "Не вказано" ? `<p class="flex gap-2"><i data-lucide="phone" class="w-4 h-4 text-slate-400 mt-0.5"></i> <span>${o.target_phone}</span></p>` : '';
+                        let tPhoneDisplay = o.target_phone && o.target_phone !== "Не вказано" ? `<p>📞 <span class="text-slate-400">Телефон співр.:</span> ${o.target_phone}</p>` : '';
                         
                         if (statusFilter === 'Скасована') {
                             cardHtml = `
-                                <div class="glass p-5 rounded-2xl border border-red-500/20 shadow-lg break-words text-[14px] relative">
-                                    <div class="font-bold text-red-400 mb-4 text-base flex justify-between items-start">
-                                        <span>№ ${o.orderId}</span>
-                                        <span class="text-slate-500 text-xs font-normal bg-red-500/10 px-2 py-1 rounded-md">${o.timestamp}</span>
-                                    </div>
-                                    <div class="space-y-2.5 text-slate-200">
-                                        <p class="flex gap-2"><i data-lucide="map-pin" class="w-4 h-4 text-slate-400 mt-0.5"></i> <span>${o.azk}</span></p>
-                                        <p class="flex gap-2"><i data-lucide="users" class="w-4 h-4 text-slate-400 mt-0.5"></i> <span>${o.target_name}</span></p>
+                                <div class="glass p-5 rounded-2xl border border-red-500/30 shadow-lg break-words text-sm relative">
+                                    <div class="font-bold text-red-400 mb-3 text-base">❌ Заявка № ${o.orderId} <br><span class="text-slate-400 text-xs font-normal">від ${o.timestamp}</span></div>
+                                    <div class="space-y-1 text-slate-200">
+                                        <p>🚩 <span class="text-slate-400">Локація АЗК:</span> ${o.azk}</p>
+                                        <p>🚻 <span class="text-slate-400">З ким працювати:</span> ${o.target_name}</p>
                                         ${tPhoneDisplay}
-                                        <p class="flex gap-2"><i data-lucide="calendar" class="w-4 h-4 text-slate-400 mt-0.5"></i> <span class="text-blue-300 font-semibold">${formatToShortDate(o.date)}</span></p>
+                                        <p>🗓️ <span class="text-slate-400">Планована дата:</span> <span class="text-blue-300 font-bold">${formatToShortDate(o.date)}</span></p>
+                                        <p>🚨 <span class="text-slate-400">Пріоритет:</span> ${o.priority}</p>
+                                        <p>❓ <span class="text-slate-400">Причина виклику:</span> ${o.reason}</p>
+                                        <p>⁉️ <span class="text-slate-400">Опис ситуації:</span> <span class="italic text-slate-300">${o.desc}</span></p>
                                     </div>
-                                    <div class="my-4 border-b border-white/5"></div>
-                                    <div class="bg-red-950/30 p-4 rounded-xl border border-red-500/10">
-                                        <div class="flex items-center gap-2 text-red-400 font-bold mb-1"><i data-lucide="x-circle" class="w-4 h-4"></i> Скасовано</div>
-                                        <p class="text-xs text-slate-500 mb-3">${o.cancel_date || '-'}</p>
-                                        <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold mb-1">Причина скасування:</p>
-                                        <p class="italic text-slate-300">${o.cancel_reason || '-'}</p>
+                                    <div class="my-3 border-b border-red-500/20"></div>
+                                    <div class="text-slate-200 bg-red-950/20 p-3 rounded-xl border border-red-500/10">
+                                        <p class="font-bold text-red-400">СТАТУС: Скасована</p>
+                                        <p class="text-xs text-slate-400 mt-1">🕒 дата скасування: ${o.cancel_date || '-'}</p>
+                                        <p class="mt-2"><span class="text-slate-400">ПРИЧИНА СКАСУВАННЯ:</span></p>
+                                        <p class="italic text-slate-300 mt-0.5">${o.cancel_reason || '-'}</p>
                                     </div>
                                 </div>
                             `;
                         } else {
                             let btnHtml = '';
                             if (statusFilter === 'Active' || statusFilter === 'Активна') {
-                                btnHtml = `<button onclick="openCancelPage('${o.orderId}')" class="w-full bg-slate-800 border border-red-500/30 hover:bg-red-900/40 hover:border-red-500/50 text-red-400 rounded-xl p-3 mt-5 font-semibold transition-all active:scale-95 flex justify-center items-center gap-2"><i data-lucide="trash-2" class="w-4 h-4"></i> Скасувати заявку</button>`;
+                                btnHtml = `<button onclick="openCancelPage('${o.orderId}')" class="w-full bg-red-600 hover:bg-red-500 text-white rounded-xl p-3 mt-4 font-bold transition shadow-lg">Скасувати заявку</button>`;
                             }
                             cardHtml = `
-                                <div class="glass p-5 rounded-2xl border border-white/10 shadow-lg break-words text-[14px] relative">
-                                    <div class="font-bold text-emerald-400 mb-4 text-base flex justify-between items-start">
-                                        <span>№ ${o.orderId}</span>
-                                        <span class="text-slate-500 text-xs font-normal bg-white/5 px-2 py-1 rounded-md">${o.timestamp}</span>
-                                    </div>
-                                    <div class="space-y-2.5 text-slate-200">
-                                        <p class="flex gap-2"><i data-lucide="map-pin" class="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0"></i> <span><span class="text-slate-500">АЗК:</span> ${o.azk}</span></p>
-                                        <p class="flex gap-2"><i data-lucide="users" class="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0"></i> <span><span class="text-slate-500">Працювати з:</span> ${o.target_name}</span></p>
+                                <div class="glass p-5 rounded-2xl border border-slate-600/50 shadow-lg break-words text-sm relative">
+                                    <div class="font-bold text-emerald-400 mb-3 text-base"> 🟢 Заявка № ${o.orderId} <br><span class="text-slate-400 text-xs font-normal">від ${o.timestamp}</span></div>
+                                    <div class="space-y-1 text-slate-200">
+                                        <p>🚩 <span class="text-slate-400">Локація АЗК:</span> ${o.azk}</p>
+                                        <p>🚻 <span class="text-slate-400">З ким працювати:</span> ${o.target_name}</p>
                                         ${tPhoneDisplay}
-                                        <div class="flex gap-2 items-center bg-white/5 p-2 rounded-lg mt-2">
-                                            <i data-lucide="calendar" class="w-4 h-4 text-blue-400"></i>
-                                            <span class="text-slate-400 text-xs">Дата:</span>
-                                            <span class="text-blue-300 font-bold">${formatToShortDate(o.date)}</span>
-                                        </div>
+                                        <p>🗓️ <span class="text-slate-400">Планована дата:</span> <span class="text-blue-300 font-bold">${formatToShortDate(o.date)}</span></p>
+                                        <p>🚨 <span class="text-slate-400">Пріоритет:</span> ${o.priority}</p>
                                     </div>
-                                    <div class="my-4 border-b border-white/5"></div>
+                                    <div class="my-3 border-b border-dashed border-slate-600/50"></div>
                                     <div class="text-slate-200">
-                                        <p class="mb-3"><span class="text-xs text-slate-400 uppercase tracking-wider font-semibold block mb-1">Причина:</span> ${o.reason}</p>
-                                        <p><span class="text-xs text-slate-400 uppercase tracking-wider font-semibold block mb-1">Опис:</span> <span class="italic text-slate-300 line-clamp-3">${o.desc}</span></p>
+                                        <p>❓ <span class="text-slate-400">Причина виклику:</span> ${o.reason}</p>
+                                        <p class="mt-2 text-slate-400">⁉️ Опис ситуації:</p>
+                                        <p class="italic text-slate-300 mt-1">${o.desc}</p>
                                     </div>
                                     ${btnHtml}
                                 </div>
@@ -551,14 +334,12 @@
                         }
                         document.getElementById('orders-container').innerHTML += cardHtml;
                     });
-                    lucide.createIcons(); // Рендер іконок для згенерованих карток
                 }
             })
             .catch(() => { document.getElementById('orders-loading').innerHTML = `<p class="text-red-400">Помилка завантаження.</p>`; });
         }
 
         function openCancelPage(orderId) {
-            vibrate('medium');
             currentCancellingOrderId = orderId;
             document.getElementById('cancel-reason-text').value = '';
             document.getElementById('cancel-reason-text').classList.remove('error-input');
@@ -569,27 +350,23 @@
             const reasonField = document.getElementById('cancel-reason-text');
             const reasonVal = reasonField.value.trim();
             if(!reasonVal) {
-                vibrate('error');
                 reasonField.classList.add('error-input');
-                if(tg && tg.showAlert) tg.showAlert("❗️ Детально поясніть причину скасування"); else alert("❗️ Детально поясніть причину скасування");
+                if(tg && tg.showAlert) tg.showAlert("❗️ Детально поясніть скасування візиту"); else alert("❗️ Детально поясніть скасування візиту");
                 return;
             }
             
-            vibrate('light');
-            document.getElementById('orders-container').innerHTML = `<div class="text-center text-slate-400 py-10 glass rounded-2xl"><div class="loader"></div><p>Оновлення статусу...</p></div>`;
+            document.getElementById('orders-container').innerHTML = `<div class="text-center text-slate-400 py-10"><div class="loader"></div><p>Оновлення статусу заявки...</p></div>`;
             showPage('page-orders-list');
             
             const payload = { action: "cancel_order", orderId: currentCancellingOrderId, cancel_reason: reasonVal };
 
-            // ФІКС ЗАВИСАННЯ: redirect: "follow"
-            fetch(WEBHOOK_URL, { method: "POST", body: JSON.stringify(payload), headers: { "Content-Type": "text/plain;charset=utf-8" }, redirect: "follow" })
+            fetch(WEBHOOK_URL, { method: "POST", body: JSON.stringify(payload), headers: { "Content-Type": "text/plain;charset=utf-8" } })
             .then(res => res.json())
             .then(data => {
-                vibrate('warning');
-                let alertMsg = "Заявку скасовано та переміщено в архів!";
+                let alertMsg = "❌ Заявка скасована\n⚠️ Заявку переміщено в розділ скасованих!";
                 if(tg && tg.showAlert) { tg.showAlert(alertMsg, function() { loadOrders('Активна'); }); } else { alert(alertMsg); loadOrders('Активна'); }
             })
-            .catch(() => { vibrate('warning'); alert("Заявку скасовано!"); loadOrders('Активна'); });
+            .catch(() => { alert("❌ Заявка скасована\n⚠️ Заявку переміщено в розділ скасованих!"); loadOrders('Активна'); });
         }
 
         function applyPhoneMask(e) {
