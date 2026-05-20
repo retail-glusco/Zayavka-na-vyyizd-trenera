@@ -42,7 +42,6 @@
         .loader { border: 3px solid rgba(255, 255, 255, 0.05); border-top: 3px solid #34d399; border-radius: 50%; width: 32px; height: 32px; animation: spin 1s linear infinite; margin: 20px auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* Стилізація select для dark mode */
         select option { background-color: #0f172a; color: white; }
     </style>
 </head>
@@ -178,17 +177,17 @@
                     <label class="text-sm font-semibold text-slate-300 mb-2 flex items-center gap-2"><i data-lucide="alert-triangle" class="w-4 h-4 text-amber-400"></i> Пріоритет та Причина</label>
                     <select id="priority" class="w-full p-4 rounded-xl glass-input mb-4 text-[15px] appearance-none">
                         <option value="empty" disabled selected>Оберіть пріоритет...</option>
-                        <option value="Звичайна">Звичайна</option>
-                        <option value="Термінова">Термінова</option>
-                        <option value="Критична">Критична</option>
+                        <option value="🚨 Звичайна">🚨 Звичайна</option>
+                        <option value="🚨 Термінова">🚨 Термінова</option>
+                        <option value="🚨 Критична">🚨 Критична</option>
                     </select>
                     <select id="reason" class="w-full p-4 rounded-xl glass-input text-[15px] appearance-none" onchange="checkOtherReason(this)">
                         <option value="empty" disabled selected>Причина виклику...</option>
-                        <option value="Новачок">Навчання новачка</option>
-                        <option value="Алгоритм">Відпрацювання алгоритму</option>
-                        <option value="Показники">Падіння показників</option>
-                        <option value="Скарги">Робота зі скаргами</option>
-                        <option value="Інше">Інша причина</option>
+                        <option value="Новачок 🎓">Новачок 🎓</option>
+                        <option value="Алгоритм 🔁">Алгоритм 🔁</option>
+                        <option value="Показники 📉">Показники 📉</option>
+                        <option value="Скарги 🗣️">Скарги 🗣️</option>
+                        <option value="Інше">Інше 🔖</option>
                     </select>
                     <div id="other-reason-container" class="hidden mt-4 animate-fade">
                         <input type="text" id="other-reason" placeholder="Опишіть вашу причину..." class="w-full p-4 rounded-xl glass-input text-[15px]">
@@ -283,32 +282,23 @@
     </div>
 
     <script>
-        // Ініціалізація Telegram Web App
         const tg = window.Telegram?.WebApp;
         if(tg) { tg.expand(); }
         const TELEGRAM_ID = tg?.initDataUnsafe?.user?.id || "BROWSER_TEST_MODE";
-        
-        // Поточний ID заявки для скасування
         let currentCancellingOrderId = null; 
 
-        // ВАШ ВЕБ-ХУК URL
-        const WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbyfrZytYdOyiikAqJgctwGokjdr_HKze3lxw3_4eCYE2x1u74nLR9GEXtyYU73PM9vO/exec"; 
+        // ВАШ НОВИЙ ВЕБХУК
+        const WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxT9BJHPErd1Jf_yNhk72Jm-8_hNVHN3U5ieiorSLGR70Y2HaODDp0TrG20aIw788FM/exec"; 
 
-        // Хелпер для вібровідгуку
         function vibrate(style = 'light') {
             if (tg && tg.HapticFeedback) {
-                if (style === 'error' || style === 'success' || style === 'warning') {
-                    tg.HapticFeedback.notificationOccurred(style);
-                } else {
-                    tg.HapticFeedback.impactOccurred(style);
-                }
+                if (style === 'error' || style === 'success' || style === 'warning') { tg.HapticFeedback.notificationOccurred(style); } 
+                else { tg.HapticFeedback.impactOccurred(style); }
             }
         }
 
-        // Ініціалізація Lucide іконок
         lucide.createIcons();
 
-        // Форматування дати/часу для створення заявки
         function getFormattedDateTime() {
             const now = new Date();
             const day = String(now.getDate()).padStart(2, '0');
@@ -319,7 +309,6 @@
             return `${day}.${month}.${year}/${hours}:${minutes}`;
         }
 
-        // Форматування дати в дд.мм.гг
         function formatToShortDate(dateString) {
             if (!dateString) return '';
             if (dateString.includes('T')) {
@@ -336,7 +325,6 @@
             return dateString;
         }
 
-        // Логіка перемикання сторінок
         function showPage(id) {
             vibrate('light');
             document.querySelectorAll('.page-section').forEach(p => { p.classList.add('hidden'); p.classList.remove('animate-fade'); });
@@ -347,23 +335,19 @@
                 document.getElementById('user-phone').value = localStorage.getItem('phone') || '';
             }
             if(id === 'page-7') renderSummary();
-            // Перемальовуємо іконки для динамічно показаних сторінок
             lucide.createIcons();
         }
 
         function startNewRequest() { localStorage.getItem('fio') ? showPage('page-3') : showPage('page-2'); }
         function openProfileFromMenu() { showPage('page-2'); }
 
-        // Валідація полів
         function validateFields(fieldIds) {
             let isValid = true;
             fieldIds.forEach(id => {
                 const el = document.getElementById(id);
                 if (!el) return;
-                // Особлива валідація для "Інше" в причинах
                 if (id === 'other-reason' && document.getElementById('reason').value !== 'Інше') { el.classList.remove('error-input'); return; }
                 let isFieldEmpty = !el.value || el.value.trim() === '' || el.value === 'empty';
-                // Валідація довжини телефону (має бути повний з маскою)
                 if (el.type === 'tel' && el.value.length < 16 && !isFieldEmpty) isFieldEmpty = true; 
                 if (isFieldEmpty) { el.classList.add('error-input'); isValid = false; } else { el.classList.remove('error-input'); }
             });
@@ -374,7 +358,6 @@
             return isValid;
         }
 
-        // Збереження профілю в локальне сховище
         function saveProfile() {
             if (!validateFields(['user-fio', 'user-phone'])) return;
             localStorage.setItem('fio', document.getElementById('user-fio').value.trim());
@@ -382,13 +365,11 @@
             showPage('page-1');
         }
 
-        // Навігація між кроками
         function goToPage4() { if (validateFields(['azk-number', 'visit-date'])) showPage('page-4'); }
         
         function goToPage5() { 
             if (!validateFields(['priority', 'reason', 'other-reason', 'target-name'])) return;
             let phoneEl = document.getElementById('target-phone');
-            // Перевірка, якщо телефон заповнено частково
             if (phoneEl.value.trim() !== '' && phoneEl.value.length < 16) {
                 phoneEl.classList.add('error-input');
                 vibrate('error');
@@ -403,7 +384,6 @@
         function goToPage6() { if (validateFields(['desc'])) showPage('page-6'); }
         function goToPage7() { if (validateFields(['result'])) showPage('page-7'); }
 
-        // Обробка причини "Інше"
         function checkOtherReason(selectObj) {
             const container = document.getElementById('other-reason-container');
             selectObj.value === 'Інше' ? container.classList.remove('hidden') : container.classList.add('hidden');
@@ -411,7 +391,6 @@
 
         document.getElementById('reason').addEventListener('change', function() { checkOtherReason(this); });
 
-        // Рендер підсумкової сторінки
         function renderSummary() {
             let finalReason = document.getElementById('reason').value === 'Інше' ? document.getElementById('other-reason').value : document.getElementById('reason').value;
             document.getElementById('sum-fio').innerText = localStorage.getItem('fio');
@@ -430,9 +409,7 @@
             document.getElementById('sum-result').innerText = document.getElementById('result').value;
         }
 
-        // ************************************************************
-        // ФУНКЦІЯ СТВОРЕННЯ ЗАЯВКИ
-        // ************************************************************
+        // --- ВІДПРАВКА НОВОЇ ЗАЯВКИ ---
         function submitForm() {
             vibrate('medium');
             const btn = document.getElementById('btn-submit');
@@ -441,7 +418,7 @@
             let finalReason = document.getElementById('reason').value === 'Інше' ? document.getElementById('other-reason').value : document.getElementById('reason').value;
             
             const payload = {
-                action: "create_order", // Оновлено для відповідності логіці GAS
+                action: "create", 
                 timestamp: document.getElementById('sum-date-created').innerText,
                 fio: localStorage.getItem('fio'),
                 phone: localStorage.getItem('phone'),
@@ -456,7 +433,6 @@
                 telegram_id: TELEGRAM_ID
             };
 
-            // ФІКС ЗАВИСАННЯ: redirect: "follow" та правильний Content-Type
             fetch(WEBHOOK_URL, { 
                 method: "POST", 
                 body: JSON.stringify(payload), 
@@ -466,9 +442,13 @@
             .then(res => res.json())
             .then(data => {
                 vibrate('success');
-                // ОНОВЛЕНЕ ВАМИ ПОВІДОМЛЕННЯ ТА ЛОГІКА
                 let successMsg = "✅ Заявка успішно прийнята.\n\n▶️ Заявка знаходиться в меню:\n📌Мої замовлення - Активні";
-                if(tg && tg.showAlert) { tg.showAlert(successMsg, function() { showPage('page-1'); }); } else { alert(successMsg); showPage('page-1'); }
+                
+                if(tg && tg.showAlert) { 
+                    tg.showAlert(successMsg, function() { showPage('page-1'); }); 
+                } else { 
+                    alert(successMsg); showPage('page-1'); 
+                }
                 
                 // Очистка полів
                 document.getElementById('azk-number').value = ''; 
@@ -480,7 +460,6 @@
                 document.getElementById('reason').value = 'empty'; 
                 document.getElementById('visit-date').value = '';
                 document.getElementById('other-reason').value = '';
-                // БАГ ФІКС ВІД ВАС: Примусово ховаємо контейнер
                 document.getElementById('other-reason-container').classList.add('hidden');
             })
             .catch(() => { 
@@ -490,11 +469,16 @@
                 document.getElementById('other-reason-container').classList.add('hidden');
             })
             .finally(() => { 
-                btn.innerHTML = '<i data-lucide="send" class="w-5 h-5"></i> Відправити'; btn.disabled = false; lucide.createIcons();
+                btn.innerHTML = '<i data-lucide="send" class="w-5 h-5"></i> Відправити'; 
+                btn.disabled = false; 
+                lucide.createIcons();
+                
+                // Страховка від зависання
+                setTimeout(() => { showPage('page-1'); }, 4000);
             });
         }
 
-        // Завантаження заявок з бази
+        // --- ЗАВАНТАЖЕННЯ СПИСКУ ЗАЯВОК ---
         function loadOrders(statusFilter) {
             const phone = localStorage.getItem('phone');
             if (!phone) {
@@ -503,7 +487,6 @@
                 showPage('page-2'); return;
             }
 
-            // Налаштування заголовка
             let titleIcon = statusFilter === 'Активна' ? '<i data-lucide="activity" class="text-emerald-400"></i>' : (statusFilter === 'Скасована' ? '<i data-lucide="x-octagon" class="text-red-400"></i>' : '<i data-lucide="archive" class="text-slate-400"></i>');
             document.getElementById('orders-list-title').innerHTML = `${titleIcon} ${statusFilter}`;
             
@@ -514,7 +497,6 @@
 
             const payload = { action: "get_orders", phone: phone, telegram_id: TELEGRAM_ID };
 
-            // ФІКС ЗАВИСАННЯ: redirect: "follow"
             fetch(WEBHOOK_URL, { 
                 method: "POST", 
                 body: JSON.stringify(payload), 
@@ -527,7 +509,6 @@
                 document.getElementById('orders-container').classList.remove('hidden');
 
                 if (data.status === "success" && data.orders) {
-                    // Фільтрація по статусу
                     const filteredOrders = data.orders.filter(o => o.status === statusFilter);
                     if (filteredOrders.length === 0) {
                         document.getElementById('orders-container').innerHTML = `
@@ -539,7 +520,6 @@
                         return;
                     }
 
-                    // Рендер карток заявок
                     filteredOrders.forEach(o => {
                         let cardHtml = '';
                         let tPhoneDisplay = o.target_phone && o.target_phone !== "Не вказано" ? `<p class="flex gap-2"><i data-lucide="phone" class="w-4 h-4 text-slate-400 mt-0.5"></i> <span>${o.target_phone}</span></p>` : '';
@@ -547,7 +527,7 @@
                         if (statusFilter === 'Скасована') {
                             cardHtml = `
                                 <div class="glass p-5 rounded-2xl border border-red-500/20 shadow-lg break-words text-[14px] relative animate-fade">
-                                    <div class="font-bold text-red-400 mb-4 text-base flex justify-between items-start">
+                                    <div class="font-bold text-emerald-400 mb-4 text-base flex justify-between items-start">
                                         <span>№ ${o.orderId}</span>
                                         <span class="text-slate-500 text-xs font-normal bg-red-500/10 px-2 py-1 rounded-md">${o.timestamp}</span>
                                     </div>
@@ -598,7 +578,7 @@
                         }
                         document.getElementById('orders-container').innerHTML += cardHtml;
                     });
-                    lucide.createIcons(); // Рендер іконок для згенерованих карток
+                    lucide.createIcons();
                 } else {
                      if(tg && tg.showAlert) tg.showAlert("Помилка бази даних."); else alert("Помилка бази даних.");
                 }
@@ -609,7 +589,6 @@
             });
         }
 
-        // Відкриття сторінки з причиною скасування
         function openCancelPage(orderId) {
             vibrate('medium');
             currentCancellingOrderId = orderId;
@@ -618,9 +597,7 @@
             showPage('page-cancel-reason');
         }
 
-        // ************************************************************
-        // ФУНКЦІЯ СКАСУВАННЯ ЗАЯВКИ (З ФІКСОМ ЗАВИСАННЯ ТА ТАЙМАУТОМ)
-        // ************************************************************
+        // --- СКАСУВАННЯ ЗАЯВКИ ---
         function submitCancellation() {
             const reasonField = document.getElementById('cancel-reason-text');
             const reasonVal = reasonField.value.trim();
@@ -641,7 +618,6 @@
                 method: "POST", 
                 body: JSON.stringify(payload), 
                 headers: { "Content-Type": "text/plain;charset=utf-8" }, 
-                // ФІКС ЗАВИСАННЯ
                 redirect: "follow" 
             })
             .then(res => res.json())
@@ -653,49 +629,36 @@
                 if (statusText) statusText.innerText = "Успішно скасовано!";
                 
                 if(tg && tg.showAlert) { 
-                    tg.showAlert(alertMsg, function() { 
-                        loadOrders('Активна'); 
-                    }); 
+                    tg.showAlert(alertMsg, function() { loadOrders('Активна'); }); 
                 } else { 
-                    alert(alertMsg); 
-                    loadOrders('Активна'); 
+                    alert(alertMsg); loadOrders('Активна'); 
                 }
             })
             .catch((error) => { 
-                console.error("Fetch catch:", error);
                 vibrate('warning'); 
-                
                 let statusText = document.getElementById('cancel-status-text');
                 if (statusText) statusText.innerText = "Успішно скасовано!";
 
                 let alertMsgFallback = "❌ Заявка скасована\n⚠️ Заявку переміщено в розділ скасованих!";
                 if(tg && tg.showAlert) { 
-                    tg.showAlert(alertMsgFallback, function() { 
-                        loadOrders('Активна'); 
-                    }); 
+                    tg.showAlert(alertMsgFallback, function() { loadOrders('Активна'); }); 
                 } else { 
-                    alert(alertMsgFallback); 
-                    loadOrders('Активна'); 
+                    alert(alertMsgFallback); loadOrders('Активна'); 
                 }
             })
             .finally(() => {
-                // Страхувальний таймаут: якщо через 5 секунд список заявок не завантажився 
-                // (наприклад, юзер проігнорував або не натиснув ОК в алерті Telegram), 
-                // ми примусово завантажуємо список.
+                // Страховка від зависання
                 setTimeout(() => {
                     const container = document.getElementById('orders-container');
-                    if (container && container.innerHTML.includes('loader')) {
-                        loadOrders('Активна');
-                    }
+                    if (container && container.innerHTML.includes('loader')) { loadOrders('Активна'); }
                 }, 5000);
             });
         }
 
-        // Маска для телефону 38 0__ ___ __ __
         function applyPhoneMask(e) {
             let val = e.target.value.replace(/\D/g, ''); 
             if (val.startsWith('38')) val = val.slice(2); 
-            if (val.length > 10) val = val.substring(0, 10); // Ліміт 10 цифр після 38
+            if (val.length > 10) val = val.substring(0, 10);
 
             let res = '38';
             if (val.length > 0) res += ' ' + val.substring(0, 3);
@@ -705,7 +668,6 @@
             e.target.value = res.trim(); e.target.classList.remove('error-input');
         }
 
-        // Прив'язка маски та очищення ерорів
         document.getElementById('user-phone').addEventListener('input', applyPhoneMask);
         document.getElementById('target-phone').addEventListener('input', applyPhoneMask);
         document.querySelectorAll('input, select, textarea').forEach(el => {
