@@ -110,6 +110,7 @@
         const TELEGRAM_ID = tg?.initDataUnsafe?.user?.id || "BROWSER_TEST_MODE";
         let currentCancellingOrderId = null; 
 
+        // WEBHOOK URL оновлено на ваш новий
         const WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbyfrZytYdOyiikAqJgctwGokjdr_HKze3lxw3_4eCYE2x1u74nLR9GEXtyYU73PM9vO/exec"; 
 
         function getFormattedDateTime() {
@@ -242,7 +243,8 @@
             fetch(WEBHOOK_URL, { method: "POST", body: JSON.stringify(payload), headers: { "Content-Type": "text/plain;charset=utf-8" } })
             .then(res => res.json())
             .then(data => {
-                let successMsg = "🚀 Заявку № " + data.orderId + " успішно прийнято!";
+                // ПОВІДОМЛЕННЯ ВИПРАВЛЕНО ТА СПРОЩЕНО
+                let successMsg = "✅ Заявка успішно прийнята.\n\n▶️ Заявка знаходиться в меню:\n📌Мої замовлення - Активні";
                 if(tg && tg.showAlert) { tg.showAlert(successMsg, function() { showPage('page-1'); }); } else { alert(successMsg); showPage('page-1'); }
                 
                 // Очистка полів
@@ -255,7 +257,7 @@
                 document.getElementById('reason').value = 'empty'; 
                 document.getElementById('visit-date').value = '';
                 document.getElementById('other-reason').value = '';
-                // БАГ ФІКС: Ховаємо контейнер
+                // БАГ ФІКС: Примусово ховаємо контейнер
                 document.getElementById('other-reason-container').classList.add('hidden');
             })
             .catch(() => { alert("✅ Заявку успішно відправлено!"); showPage('page-1'); })
