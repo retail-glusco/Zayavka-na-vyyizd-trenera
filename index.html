@@ -243,7 +243,7 @@
 
                 <div class="space-y-2 mb-6">
                     <div class="flex justify-between border-b border-white/5 pb-2"><span class="text-slate-400">Замовник</span> <span id="sum-fio" class="font-medium text-white text-right"></span></div>
-                    <div class="flex justify-between border-b border-white/5 pb-2"><span class="text-slate-400">Телефон</span> <span id="sum-phone" class="font-medium text-white"></span></div>
+                    <div class="flex justify-between border-b border-white/5 pb-2"><span class="text-slate-400">Telephone</span> <span id="sum-phone" class="font-medium text-white"></span></div>
                     <div class="flex justify-between border-b border-white/5 pb-2"><span class="text-slate-400">Створено</span> <span id="sum-date-created" class="font-medium text-white"></span></div>
                     <div class="flex justify-between border-b border-white/5 pb-2"><span class="text-slate-400">Пріоритет</span> <span id="sum-priority" class="font-semibold text-amber-400"></span></div>
                     <div class="flex justify-between border-b border-white/5 pb-2"><span class="text-slate-400">Локація АЗК</span> <span id="sum-azk" class="font-medium text-white"></span></div>
@@ -287,8 +287,8 @@
         const TELEGRAM_ID = tg?.initDataUnsafe?.user?.id || "BROWSER_TEST_MODE";
         let currentCancellingOrderId = null; 
 
-        // ВАШ НОВИЙ ВЕБХУК
-        const WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxT9BJHPErd1Jf_yNhk72Jm-8_hNVHN3U5ieiorSLGR70Y2HaODDp0TrG20aIw788FM/exec"; 
+        // ОНОВЛЕНО: ВСТАВЛЕНО ВАШ ОСТАННІЙ НОВИЙ ВЕБ-ХУК
+        const WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbyHUx18-Ji5txt89MdAh5dUFe6zij8N7T9jrkWCbwi56QJ3tjfA1zYbD99RgABFr7s9/exec"; 
 
         function vibrate(style = 'light') {
             if (tg && tg.HapticFeedback) {
@@ -401,7 +401,7 @@
             document.getElementById('sum-target').innerText = document.getElementById('target-name').value;
             
             let tPhone = document.getElementById('target-phone').value;
-            document.getElementById('sum-target-phone').innerText = tPhone ? tPhone : "Телефон не вказано";
+            document.getElementById('sum-target-phone').innerText = tPhone ? tPhone : "Не вказано";
             
             document.getElementById('sum-visit-date').innerText = formatToShortDate(document.getElementById('visit-date').value);
             document.getElementById('sum-reason').innerText = finalReason;
@@ -409,7 +409,6 @@
             document.getElementById('sum-result').innerText = document.getElementById('result').value;
         }
 
-        // --- ВІДПРАВКА НОВОЇ ЗАЯВКИ ---
         function submitForm() {
             vibrate('medium');
             const btn = document.getElementById('btn-submit');
@@ -450,7 +449,6 @@
                     alert(successMsg); showPage('page-1'); 
                 }
                 
-                // Очистка полів
                 document.getElementById('azk-number').value = ''; 
                 document.getElementById('target-name').value = ''; 
                 document.getElementById('target-phone').value = ''; 
@@ -472,13 +470,10 @@
                 btn.innerHTML = '<i data-lucide="send" class="w-5 h-5"></i> Відправити'; 
                 btn.disabled = false; 
                 lucide.createIcons();
-                
-                // Страховка від зависання
                 setTimeout(() => { showPage('page-1'); }, 4000);
             });
         }
 
-        // --- ЗАВАНТАЖЕННЯ СПИСКУ ЗАЯВОК ---
         function loadOrders(statusFilter) {
             const phone = localStorage.getItem('phone');
             if (!phone) {
@@ -487,7 +482,7 @@
                 showPage('page-2'); return;
             }
 
-            let titleIcon = statusFilter === 'Активна' ? '<i data-lucide="activity" class="text-emerald-400"></i>' : (statusFilter === 'Скасована' ? '<i data-lucide="x-octagon" class="text-red-400"></i>' : '<i data-lucide="archive" class="text-slate-400"></i>');
+            let titleIcon = statusFilter === 'Active' || statusFilter === 'Активна' ? '<i data-lucide="activity" class="text-emerald-400"></i>' : (statusFilter === 'Скасована' ? '<i data-lucide="x-octagon" class="text-red-400"></i>' : '<i data-lucide="archive" class="text-slate-400"></i>');
             document.getElementById('orders-list-title').innerHTML = `${titleIcon} ${statusFilter}`;
             
             showPage('page-orders-list');
@@ -548,7 +543,7 @@
                             `;
                         } else {
                             let btnHtml = '';
-                            if (statusFilter === 'Активна') {
+                            if (statusFilter === 'Active' || statusFilter === 'Активна') {
                                 btnHtml = `<button onclick="openCancelPage('${o.orderId}')" class="w-full bg-slate-800 border border-red-500/30 hover:bg-red-900/40 hover:border-red-500/50 text-red-400 rounded-xl p-3 mt-5 font-semibold transition-all active:scale-95 flex justify-center items-center gap-2"><i data-lucide="trash-2" class="w-4 h-4"></i> Скасувати заявку</button>`;
                             }
                             cardHtml = `
@@ -597,7 +592,6 @@
             showPage('page-cancel-reason');
         }
 
-        // --- СКАСУВАННЯ ЗАЯВКИ ---
         function submitCancellation() {
             const reasonField = document.getElementById('cancel-reason-text');
             const reasonVal = reasonField.value.trim();
@@ -647,7 +641,6 @@
                 }
             })
             .finally(() => {
-                // Страховка від зависання
                 setTimeout(() => {
                     const container = document.getElementById('orders-container');
                     if (container && container.innerHTML.includes('loader')) { loadOrders('Активна'); }
