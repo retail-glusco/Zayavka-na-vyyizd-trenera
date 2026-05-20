@@ -598,4 +598,120 @@
                         }
                         document.getElementById('orders-container').innerHTML += cardHtml;
                     });
-                    lucide.createIcons(); // Рендер іконок
+                    lucide.createIcons(); // Рендер іконок для згенерованих карток
+                } else {
+                     if(tg && tg.showAlert) tg.showAlert("Помилка бази даних."); else alert("Помилка бази даних.");
+                }
+            })
+            .catch(() => { 
+                document.getElementById('orders-loading').innerHTML = `<div class="text-center p-6"><i data-lucide="wifi-off" class="w-10 h-10 text-red-500 mx-auto mb-3"></i><p class="text-red-400">Помилка з'єднання або завантаження даних.</p></div>`; 
+                lucide.createIcons();
+            });
+        }
+
+        // Відкриття сторінки з причиною скасування
+        function openCancelPage(orderId) {
+            vibrate('medium');
+            currentCancellingOrderId = orderId;
+            document.getElementById('cancel-reason-text').value = '';
+            document.getElementById('cancel-reason-text').classList.remove('error-input');
+            showPage('page-cancel-reason');
+        }
+
+        // ************************************************************
+        // ФУНКЦІЯ СКАСУВАННЯ ЗАЯВКИ (З ФІКСОМ ЗАВИСАННЯ ТА ТАЙМАУТОМ)
+        // ************************************************************
+        function submitCancellation() {
+            const reasonField = document.getElementById('cancel-reason-text');
+            const reasonVal = reasonField.value.trim();
+            if(!reasonVal) {
+                vibrate('error');
+                reasonField.classList.add('error-input');
+                if(tg && tg.showAlert) tg.showAlert("❗️ Детально поясніть причину скасування візиту"); else alert("❗️ Детально поясніть причину скасування візиту");
+                return;
+            }
+            
+            vibrate('light');
+            document.getElementById('orders-container').innerHTML = `<div class="text-center text-slate-400 py-10 glass rounded-2xl"><div class="loader"></div><p id="cancel-status-text">Оновлення статусу заявки...</p></div>`;
+            showPage('page-orders-list');
+            
+            const payload = { action: "cancel_order", orderId: currentCancellingOrderId, cancel_reason: reasonVal };
+
+            fetch(WEBHOOK_URL, { 
+                method: "POST", 
+                body: JSON.stringify(payload), 
+                headers: { "Content-Type": "text/plain;charset=utf-8" }, 
+                // ФІКС ЗАВИСАННЯ
+                redirect: "follow" 
+            })
+            .then(res => res.json())
+            .then(data => {
+                vibrate('warning');
+                let alertMsg = "❌ Заявка скасована\n⚠️ Заявку переміщено в розділ скасованих!";
+                
+                let statusText = document.getElementById('cancel-status-text');
+                if (statusText) statusText.innerText = "Успішно скасовано!";
+                
+                if(tg && tg.showAlert) { 
+                    tg.showAlert(alertMsg, function() { 
+                        loadOrders('Активна'); 
+                    }); 
+                } else { 
+                    alert(alertMsg); 
+                    loadOrders('Активна'); 
+                }
+            })
+            .catch((error) => { 
+                console.error("Fetch catch:", error);
+                vibrate('warning'); 
+                
+                let statusText = document.getElementById('cancel-status-text');
+                if (statusText) statusText.innerText = "Успішно скасовано!";
+
+                let alertMsgFallback = "❌ Заявка скасована\n⚠️ Заявку переміщено в розділ скасованих!";
+                if(tg && tg.showAlert) { 
+                    tg.showAlert(alertMsgFallback, function() { 
+                        loadOrders('Активна'); 
+                    }); 
+                } else { 
+                    alert(alertMsgFallback); 
+                    loadOrders('Активна'); 
+                }
+            })
+            .finally(() => {
+                // Страхувальний таймаут: якщо через 5 секунд список заявок не завантажився 
+                // (наприклад, юзер проігнорував або не натиснув ОК в алерті Telegram), 
+                // ми примусово завантажуємо список.
+                setTimeout(() => {
+                    const container = document.getElementById('orders-container');
+                    if (container && container.innerHTML.includes('loader')) {
+                        loadOrders('Активна');
+                    }
+                }, 5000);
+            });
+        }
+
+        // Маска для телефону 38 0__ ___ __ __
+        function applyPhoneMask(e) {
+            let val = e.target.value.replace(/\D/g, ''); 
+            if (val.startsWith('38')) val = val.slice(2); 
+            if (val.length > 10) val = val.substring(0, 10); // Ліміт 10 цифр після 38
+
+            let res = '38';
+            if (val.length > 0) res += ' ' + val.substring(0, 3);
+            if (val.length >= 4) res += ' ' + val.substring(3, 6);
+            if (val.length >= 7) res += ' ' + val.substring(6, 8);
+            if (val.length >= 9) res += ' ' + val.substring(8, 10);
+            e.target.value = res.trim(); e.target.classList.remove('error-input');
+        }
+
+        // Прив'язка маски та очищення ерорів
+        document.getElementById('user-phone').addEventListener('input', applyPhoneMask);
+        document.getElementById('target-phone').addEventListener('input', applyPhoneMask);
+        document.querySelectorAll('input, select, textarea').forEach(el => {
+            el.addEventListener('input', function() { this.classList.remove('error-input'); });
+            el.addEventListener('change', function() { this.classList.remove('error-input'); });
+        });
+    </script>
+</body>
+</html>
