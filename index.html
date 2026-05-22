@@ -237,8 +237,30 @@
         .menu-item-title { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; }
         .menu-item-sub { font-size: 11px; color: #475569; margin-top: 2px; }
 
-        select option { background: #0f172a; color: white; }
-        input[type="date"] { color-scheme: dark; color: #94a3b8; }
+        /* iOS date input fix — не вилазить за рамки */
+        input[type="date"] {
+            color-scheme: dark;
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            display: block;
+            min-height: 52px;
+        }
+        /* Прибрати нативну іконку календаря в WebKit що займає місце */
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            opacity: 0.4;
+            filter: invert(1);
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        input[type="date"]::-webkit-date-and-time-value {
+            text-align: left;
+        }
     </style>
 </head>
 <body>
@@ -610,7 +632,7 @@
             </div>
             <div>
                 <div class="field-label"><i data-lucide="calendar" class="w-3.5 h-3.5" style="color:#34d399;"></i> Бажана дата візиту</div>
-                <input type="date" id="visit-date" class="w-full p-4 rounded-xl glass-input text-[15px]">
+                <input type="date" id="visit-date" class="w-full rounded-xl glass-input" style="padding:14px 16px;font-size:16px;width:100%;box-sizing:border-box;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;-webkit-appearance:none;appearance:none;">
             </div>
             <button onclick="goToPage4()" class="btn-primary">Продовжити →</button>
         </div>
@@ -974,7 +996,7 @@
     }
 
     // ══════════════════════════════════════════
-    // iOS FIX: Кнопки працюють при відкритій клавіатурі
+    // iOS FIX: Кнопки ЗАВЖДИ активні — незалежно від клавіатури
     // ══════════════════════════════════════════
     function dismissKeyboard() {
         const el = document.activeElement;
@@ -983,30 +1005,36 @@
         }
     }
 
-    // iOS баг: коли клавіатура відкрита і натискаєш кнопку —
-    // iOS закриває клавіатуру, сторінка зміщується, click потрапляє в порожнечу.
-    // Рішення: перехоплюємо touchend, скасовуємо "призрачний" click,
-    // закриваємо клавіатуру і вручну запускаємо кнопку через 80ms
-    // (після того як layout стабілізується).
-    document.addEventListener('touchend', function(e) {
+    // Перехоплюємо touchstart на кнопках:
+    // — одразу blur (клавіатура починає закриватись)
+    // — preventDefault скасовує будь-яку затримку iOS
+    // — зберігаємо яку кнопку натиснули
+    let _pendingBtn = null;
+
+    document.addEventListener('touchstart', function(e) {
         const btn = e.target.closest('button');
         if (!btn || btn.disabled) return;
+        dismissKeyboard();
+        _pendingBtn = btn;
+    }, { passive: true });
 
-        const keyboardWasOpen = document.activeElement &&
-            (document.activeElement.tagName === 'INPUT' ||
-             document.activeElement.tagName === 'TEXTAREA');
-
-        if (keyboardWasOpen) {
-            e.preventDefault();   // скасовуємо зміщений ghost-click
-            e.stopPropagation();
-            dismissKeyboard();    // закриваємо клавіатуру
-            setTimeout(() => {    // чекаємо поки layout стабілізується
-                if (!btn.disabled) btn.click();
-            }, 80);
-        } else {
-            dismissKeyboard();    // просто blur якщо клавіатура вже закрита
+    // На touchend — якщо палець все ще над тією ж кнопкою,
+    // скасовуємо стандартний (можливо зміщений) click
+    // і запускаємо вручну — гарантовано на правильній позиції
+    document.addEventListener('touchend', function(e) {
+        const btn = e.target.closest('button');
+        if (!btn || btn.disabled || btn !== _pendingBtn) {
+            _pendingBtn = null;
+            return;
         }
+        _pendingBtn = null;
+        e.preventDefault();    // скасовуємо ghost-click
+        btn.click();           // запускаємо вручну — без затримок і зміщень
     }, { passive: false });
+
+    document.addEventListener('touchcancel', function() {
+        _pendingBtn = null;
+    }, { passive: true });
 
     // ── iOS: фокус на input — скрол щоб поле не ховалось за клавіатурою ──
     document.addEventListener('touchstart', function(e) {
