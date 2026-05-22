@@ -2,671 +2,1530 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#060a12">
     <title>Польовий тренер</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
-    
+
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #070B14; }
-        
-        /* Фонове світло (Ambient blobs) */
-        .blob { position: fixed; border-radius: 50%; filter: blur(100px); z-index: -1; opacity: 0.4; animation: pulse 8s infinite alternate; }
-        .blob-blue { top: -10%; left: -10%; width: 350px; height: 350px; background: rgba(59, 130, 246, 0.6); }
-        .blob-emerald { bottom: -10%; right: -10%; width: 350px; height: 350px; background: rgba(16, 185, 129, 0.4); }
+        :root {
+            --bg: #060a12;
+            --surface: rgba(30, 41, 59, 0.45);
+            --border: rgba(255,255,255,0.07);
+            --border-strong: rgba(255,255,255,0.13);
+            --blue: #3b82f6;
+            --emerald: #10b981;
+            --amber: #f59e0b;
+            --red: #ef4444;
+        }
 
-        @keyframes pulse { 0% { transform: scale(1); opacity: 0.3; } 100% { transform: scale(1.1); opacity: 0.5; } }
+        * { box-sizing: border-box; }
 
-        /* Преміальний Glassmorphism */
-        .glass { background: rgba(30, 41, 59, 0.4); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1); }
-        .glass-input { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); color: white; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .glass-input:focus { border-color: #3b82f6; background: rgba(15, 23, 42, 0.8); box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15); outline: none; }
-        
-        .error-input { border-color: #ef4444 !important; box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.15) !important; background: rgba(239, 68, 68, 0.05) !important; }
-        
-        /* Градієнтні тексти */
-        .gradient-text-primary { background: linear-gradient(135deg, #60a5fa, #34d399); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .gradient-text-amber { background: linear-gradient(135deg, #fbbf24, #f59e0b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        
-        .animate-fade { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        /* Скролбар */
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background-color: var(--bg);
+            color: #f1f5f9;
+            min-height: 100vh;
+            min-height: -webkit-fill-available; /* iOS fix */
+            padding: 0 16px env(safe-area-inset-bottom, 24px);
+            padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
+            display: flex;
+            justify-content: center;
+            overflow-x: hidden;
+            /* iOS momentum scroll */
+            -webkit-overflow-scrolling: touch;
+            /* Prevent text selection on long press */
+            -webkit-user-select: none;
+            user-select: none;
+            /* Prevent callout on long press iOS */
+            -webkit-touch-callout: none;
+            /* Prevent tap highlight */
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Allow text selection inside inputs/textareas */
+        input, textarea {
+            -webkit-user-select: text;
+            user-select: text;
+            -webkit-touch-callout: default;
+            /* Prevent iOS zoom on focus (font-size >= 16px) */
+            font-size: 16px !important;
+        }
+
+        /* noise texture */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Ambient blobs */
+        .blob { position: fixed; border-radius: 50%; filter: blur(120px); z-index: 0; pointer-events: none; }
+        .blob-blue  { top: -15%; left: -15%; width: 420px; height: 420px; background: radial-gradient(circle, rgba(59,130,246,0.22) 0%, transparent 70%); animation: drift1 14s ease-in-out infinite alternate; }
+        .blob-green { bottom: -15%; right: -15%; width: 380px; height: 380px; background: radial-gradient(circle, rgba(16,185,129,0.16) 0%, transparent 70%); animation: drift2 17s ease-in-out infinite alternate; }
+        @keyframes drift1 { from { transform: scale(1); } to { transform: translate(20px, 15px) scale(1.08); } }
+        @keyframes drift2 { from { transform: scale(1); } to { transform: translate(-15px, -20px) scale(0.94); } }
+
+        .page-wrap { width: 100%; max-width: 390px; position: relative; z-index: 1; }
+
+        /* Glass */
+        .glass {
+            background: var(--surface);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 24px rgba(0,0,0,0.15);
+        }
+        .glass-input {
+            background: rgba(10,16,28,0.7);
+            border: 1px solid rgba(255,255,255,0.09);
+            color: #f1f5f9;
+            transition: all 0.25s ease;
+        }
+        .glass-input:focus { border-color: var(--blue); background: rgba(10,16,28,0.85); box-shadow: 0 0 0 4px rgba(59,130,246,0.12); outline: none; }
+        .error-input { border-color: var(--red) !important; box-shadow: 0 0 0 4px rgba(239,68,68,0.12) !important; }
+
+        /* Typography */
+        .font-display { font-family: 'Syne', sans-serif; }
+        .gradient-blue-green { background: linear-gradient(135deg, #60a5fa, #34d399); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+        /* Animations */
+        .animate-fade { animation: fadeUp 0.38s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-pop { animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes pop { from { opacity: 0; transform: scale(0.7); } to { opacity: 1; transform: scale(1); } }
+
+        /* Scrollbar */
         textarea::-webkit-scrollbar { width: 4px; }
-        textarea::-webkit-scrollbar-track { background: transparent; }
-        textarea::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.2); border-radius: 10px; }
-        
-        /* Лоадер */
-        .loader { border: 3px solid rgba(255, 255, 255, 0.05); border-top: 3px solid #34d399; border-radius: 50%; width: 32px; height: 32px; animation: spin 1s linear infinite; margin: 20px auto; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        textarea::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 10px; }
 
-        select option { background-color: #0f172a; color: white; }
+        /* Loader */
+        .loader { border: 3px solid rgba(255,255,255,0.05); border-top-color: #34d399; border-radius: 50%; width: 30px; height: 30px; animation: spin 0.9s linear infinite; margin: 16px auto; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── SHARED COMPONENTS ── */
+
+        /* Page header with back */
+        .page-header { display: flex; align-items: center; gap: 12px; padding: 20px 0 24px; }
+        .btn-back { width: 38px; height: 38px; flex-shrink: 0; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.04); border: 1px solid var(--border); color: #94a3b8; transition: all 0.2s; active:scale(0.95); }
+        .btn-back:active { transform: scale(0.93); background: rgba(255,255,255,0.07); }
+        .page-header h2 { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 700; color: #f1f5f9; }
+
+        /* Primary button */
+        .btn-primary { width: 100%; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; padding: 15px; border-radius: 14px; font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; transition: all 0.2s; box-shadow: 0 6px 20px rgba(37,99,235,0.3); display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-primary:hover { box-shadow: 0 8px 28px rgba(37,99,235,0.45); transform: translateY(-1px); }
+        .btn-primary:active { transform: scale(0.97); }
+        .btn-primary:disabled { opacity: 0.6; pointer-events: none; }
+
+        .btn-success { background: linear-gradient(135deg, #059669, #047857); box-shadow: 0 6px 20px rgba(5,150,105,0.3); }
+        .btn-success:hover { box-shadow: 0 8px 28px rgba(5,150,105,0.45); }
+
+        .btn-danger { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.25); box-shadow: none; }
+        .btn-danger:hover { background: rgba(239,68,68,0.22); box-shadow: none; }
+
+        .btn-secondary { background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: #94a3b8; box-shadow: none; }
+        .btn-secondary:hover { background: rgba(255,255,255,0.08); box-shadow: none; }
+
+        /* Form label */
+        .field-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; color: #64748b; margin-bottom: 7px; display: flex; align-items: center; gap: 5px; }
+
+        /* Progress bar */
+        .progress-wrap { padding: 0 0 20px; }
+        .progress-steps { display: flex; gap: 5px; margin-bottom: 7px; }
+        .progress-step { flex: 1; height: 3px; border-radius: 99px; transition: background 0.35s ease; }
+        .progress-step.done { background: var(--emerald); }
+        .progress-step.active { background: var(--blue); }
+        .progress-step.idle { background: rgba(255,255,255,0.09); }
+        .progress-label { display: flex; justify-content: space-between; font-size: 11px; color: #475569; }
+        .progress-label .current-step { color: #60a5fa; font-weight: 600; }
+
+        /* Priority chips */
+        .prio-chips { display: flex; gap: 8px; }
+        .prio-chip { flex: 1; padding: 11px 6px; border-radius: 12px; text-align: center; font-size: 12px; font-weight: 600; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); color: #64748b; cursor: pointer; transition: all 0.2s; user-select: none; }
+        .prio-chip:active { transform: scale(0.95); }
+        .prio-chip .chip-emoji { font-size: 16px; display: block; margin-bottom: 3px; }
+        .prio-chip.active-norm  { background: rgba(59,130,246,0.16); border-color: rgba(59,130,246,0.4); color: #93c5fd; }
+        .prio-chip.active-urgent{ background: rgba(245,158,11,0.15); border-color: rgba(245,158,11,0.4); color: #fcd34d; }
+        .prio-chip.active-crit  { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.4); color: #fca5a5; }
+
+        /* Status badge */
+        .badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 99px; font-size: 11px; font-weight: 700; }
+        .badge-active { background: rgba(16,185,129,0.12); color: #34d399; border: 1px solid rgba(16,185,129,0.2); }
+        .badge-cancel { background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.2); }
+        .badge-archive { background: rgba(100,116,139,0.12); color: #94a3b8; border: 1px solid rgba(100,116,139,0.2); }
+
+        /* Order card */
+        .order-card { border-radius: 18px; overflow: hidden; margin-bottom: 12px; background: rgba(15,23,42,0.55); border: 1px solid var(--border); backdrop-filter: blur(12px); }
+        .order-card-stripe { height: 2px; }
+        .order-card-body { padding: 16px; }
+        .order-card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .order-id { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 800; color: #34d399; }
+        .order-ts { font-size: 10px; color: #475569; background: rgba(255,255,255,0.04); padding: 3px 8px; border-radius: 6px; border: 1px solid var(--border); }
+        .order-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+        .order-chip { font-size: 11px; color: #94a3b8; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); padding: 4px 9px; border-radius: 7px; }
+        .order-chip span { color: rgba(255,255,255,0.8); }
+        .order-divider { height: 1px; background: rgba(255,255,255,0.05); margin: 12px 0; }
+        .order-field-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; color: #475569; margin-bottom: 3px; }
+        .order-field-value { font-size: 13px; color: #cbd5e1; line-height: 1.5; word-break: break-word; overflow-wrap: break-word; white-space: pre-wrap; }
+        .order-cancel-block { background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.12); border-radius: 12px; padding: 12px; margin-top: 12px; }
+
+        /* Success page */
+        #page-success .success-circle {
+            width: 80px; height: 80px; border-radius: 50%;
+            background: rgba(16,185,129,0.1); border: 2px solid rgba(16,185,129,0.3);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 38px; margin: 0 auto 20px;
+            box-shadow: 0 0 40px rgba(16,185,129,0.2);
+        }
+        #page-success .success-id-card {
+            background: rgba(16,185,129,0.06); border: 1px solid rgba(16,185,129,0.15);
+            border-radius: 14px; padding: 14px; text-align: center; margin-bottom: 20px;
+        }
+
+        /* Bottom nav bar for forms */
+        .form-bottom-nav { display: flex; gap: 10px; padding-top: 14px; }
+
+        /* Topbar (home) */
+        .topbar { display: flex; justify-content: space-between; align-items: center; padding: 20px 0 8px; }
+        .logo-mark { width: 34px; height: 34px; border-radius: 10px; background: linear-gradient(135deg, #2563eb, #059669); display: flex; align-items: center; justify-content: center; font-size: 17px; box-shadow: 0 4px 14px rgba(37,99,235,0.35); }
+        .logo-text { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; background: linear-gradient(90deg, #60a5fa, #34d399); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .user-avatar { width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, #6366f1, #8b5cf6); display: flex; align-items: center; justify-content: center; font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700; border: 2px solid rgba(139,92,246,0.35); }
+
+        /* Stats strip */
+        .stats-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
+        .stat-tile { background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 14px; padding: 12px 8px; text-align: center; }
+        .stat-num { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; line-height: 1; }
+        .stat-lbl { font-size: 10px; color: #475569; margin-top: 3px; text-transform: uppercase; letter-spacing: 0.04em; }
+
+        /* Main CTA */
+        .main-cta {
+            background: linear-gradient(140deg, #1d4ed8 0%, #1e40af 100%);
+            border-radius: 18px; padding: 18px; display: flex; align-items: center; gap: 14px;
+            margin-bottom: 10px; position: relative; overflow: hidden;
+            box-shadow: 0 8px 28px rgba(29,78,216,0.4);
+            transition: transform 0.15s, box-shadow 0.15s; cursor: pointer;
+        }
+        .main-cta::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent); }
+        .main-cta::after { content: ''; position: absolute; bottom: -30px; right: -20px; width: 120px; height: 120px; border-radius: 50%; background: rgba(255,255,255,0.04); }
+        .main-cta:active { transform: scale(0.98); box-shadow: 0 4px 16px rgba(29,78,216,0.35); }
+        .cta-icon-wrap { width: 46px; height: 46px; border-radius: 14px; background: rgba(255,255,255,0.12); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 22px; }
+        .cta-title { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; color: white; }
+        .cta-sub { font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 2px; }
+        .cta-arrow { font-size: 20px; color: rgba(255,255,255,0.3); margin-left: auto; position: relative; z-index: 1; }
+
+        /* Secondary 2-col grid */
+        .sec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .sec-tile { background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 16px; padding: 16px 12px; display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; transition: all 0.2s; }
+        .sec-tile:active { background: rgba(255,255,255,0.07); transform: scale(0.97); }
+        .sec-tile-icon { font-size: 22px; }
+        .sec-tile-label { font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 600; color: #cbd5e1; }
+        .sec-tile-sub { font-size: 10px; color: #475569; }
+
+        /* Menu list (orders menu) */
+        .menu-item { display: flex; align-items: center; gap: 14px; padding: 16px; border-radius: 16px; cursor: pointer; transition: all 0.2s; border: 1px solid var(--border); background: rgba(15,23,42,0.4); margin-bottom: 10px; }
+        .menu-item:active { transform: scale(0.98); }
+        .menu-item-icon { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+        .menu-item-text { flex: 1; }
+        .menu-item-title { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; }
+        .menu-item-sub { font-size: 11px; color: #475569; margin-top: 2px; }
+
+        select option { background: #0f172a; color: white; }
+        input[type="date"] { color-scheme: dark; color: #94a3b8; }
     </style>
 </head>
-<body class="text-white min-h-screen p-6 flex justify-center relative overflow-x-hidden">
+<body>
 
-    <div class="blob blob-blue"></div>
-    <div class="blob blob-emerald"></div>
+<div class="blob blob-blue"></div>
+<div class="blob blob-green"></div>
 
-    <div class="w-full max-w-sm relative pb-10">
-        <div id="page-1" class="page-section flex flex-col items-center pt-8 animate-fade">
-            <div class="w-full text-center mb-10">
-                <div class="w-20 h-20 mx-auto mb-6 bg-gradient-to-tr from-blue-600/20 to-emerald-500/20 rounded-3xl flex items-center justify-center border border-white/10 shadow-lg shadow-blue-500/10">
-                    <i data-lucide="graduation-cap" class="w-10 h-10 text-emerald-400"></i>
-                </div>
-                <h1 class="text-3xl font-bold text-white mb-2 tracking-tight">Польовий тренер</h1>
-                <p class="gradient-text-primary font-bold uppercase tracking-[0.2em] text-[10px]">Створення заявки на візит</p>
+<div class="page-wrap">
+
+    <!-- ══════════════════════ PAGE 1: HOME ══════════════════════ -->
+    <div id="page-1" class="page-section animate-fade">
+
+        <!-- Hero header — original style -->
+        <div style="width:100%;text-align:center;padding:24px 0 16px;">
+            <!-- SVG Illustration -->
+            <div style="width:160px;height:160px;margin:0 auto 20px;position:relative;">
+                <svg viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;">
+                  <defs>
+                    <radialGradient id="glow1" cx="50%" cy="50%" r="50%">
+                      <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.3"/>
+                      <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
+                    </radialGradient>
+                    <radialGradient id="glow2" cx="50%" cy="50%" r="50%">
+                      <stop offset="0%" stop-color="#10b981" stop-opacity="0.25"/>
+                      <stop offset="100%" stop-color="#10b981" stop-opacity="0"/>
+                    </radialGradient>
+                    <linearGradient id="bodyGrad" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stop-color="#3b82f6"/>
+                      <stop offset="100%" stop-color="#10b981"/>
+                    </linearGradient>
+                    <linearGradient id="chartGrad" x1="0" y1="1" x2="0" y2="0">
+                      <stop offset="0%" stop-color="#10b981" stop-opacity="0"/>
+                      <stop offset="100%" stop-color="#10b981" stop-opacity="0.35"/>
+                    </linearGradient>
+                    <filter id="blur1">
+                      <feGaussianBlur stdDeviation="6"/>
+                    </filter>
+                    <filter id="blur2">
+                      <feGaussianBlur stdDeviation="3"/>
+                    </filter>
+                    <clipPath id="clip1">
+                      <rect x="18" y="90" width="60" height="40" rx="3"/>
+                    </clipPath>
+                  </defs>
+
+                  <!-- Background glow blobs -->
+                  <ellipse cx="60" cy="105" rx="45" ry="30" fill="url(#glow1)" filter="url(#blur1)"/>
+                  <ellipse cx="115" cy="75" rx="30" ry="30" fill="url(#glow2)" filter="url(#blur1)"/>
+
+                  <!-- Whiteboard / screen panel -->
+                  <rect x="18" y="88" width="60" height="42" rx="4" fill="rgba(15,23,42,0.9)" stroke="rgba(59,130,246,0.4)" stroke-width="1"/>
+                  <rect x="18" y="88" width="60" height="6" rx="3" fill="rgba(59,130,246,0.15)"/>
+
+                  <!-- Chart area fill -->
+                  <polygon points="24,124 36,112 46,117 58,103 70,106 70,128 24,128" fill="url(#chartGrad)" clip-path="url(#clip1)"/>
+
+                  <!-- Chart line on board -->
+                  <polyline points="24,124 36,112 46,117 58,103 70,106" stroke="#10b981" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none">
+                    <animate attributeName="stroke-dasharray" from="0,200" to="120,0" dur="1.4s" fill="freeze" begin="0.3s"/>
+                  </polyline>
+
+                  <!-- Chart dots -->
+                  <circle cx="24" cy="124" r="2" fill="#10b981"><animate attributeName="opacity" values="0;1" dur="0.2s" begin="0.3s" fill="freeze"/></circle>
+                  <circle cx="36" cy="112" r="2" fill="#10b981"><animate attributeName="opacity" values="0;1" dur="0.2s" begin="0.6s" fill="freeze"/></circle>
+                  <circle cx="46" cy="117" r="2" fill="#10b981"><animate attributeName="opacity" values="0;1" dur="0.2s" begin="0.8s" fill="freeze"/></circle>
+                  <circle cx="58" cy="103" r="2.5" fill="#34d399" filter="url(#blur2)"><animate attributeName="opacity" values="0;1" dur="0.2s" begin="1s" fill="freeze"/></circle>
+                  <circle cx="70" cy="106" r="2" fill="#10b981"><animate attributeName="opacity" values="0;1" dur="0.2s" begin="1.2s" fill="freeze"/></circle>
+
+                  <!-- Board stand -->
+                  <line x1="48" y1="130" x2="44" y2="140" stroke="rgba(59,130,246,0.5)" stroke-width="1.5" stroke-linecap="round"/>
+                  <line x1="48" y1="130" x2="52" y2="140" stroke="rgba(59,130,246,0.5)" stroke-width="1.5" stroke-linecap="round"/>
+
+                  <!-- Trainer figure: legs -->
+                  <line x1="99" y1="128" x2="95" y2="145" stroke="url(#bodyGrad)" stroke-width="3" stroke-linecap="round"/>
+                  <line x1="99" y1="128" x2="103" y2="145" stroke="url(#bodyGrad)" stroke-width="3" stroke-linecap="round"/>
+
+                  <!-- Trainer figure: body -->
+                  <rect x="90" y="107" width="18" height="24" rx="6" fill="url(#bodyGrad)" opacity="0.95"/>
+
+                  <!-- Pointer arm -->
+                  <line x1="90" y1="114" x2="74" y2="108" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round">
+                    <animateTransform attributeName="transform" type="rotate" values="0 90 114; -8 90 114; 0 90 114" dur="2.5s" repeatCount="indefinite"/>
+                  </line>
+                  <circle cx="74" cy="108" r="2.5" fill="#60a5fa">
+                    <animateTransform attributeName="transform" type="rotate" values="0 90 114; -8 90 114; 0 90 114" dur="2.5s" repeatCount="indefinite"/>
+                  </circle>
+
+                  <!-- Other arm -->
+                  <line x1="108" y1="114" x2="117" y2="120" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+
+                  <!-- Clipboard in other hand -->
+                  <rect x="115" y="117" width="14" height="18" rx="2.5" fill="rgba(15,23,42,0.9)" stroke="rgba(96,165,250,0.6)" stroke-width="1"/>
+                  <line x1="118" y1="122" x2="126" y2="122" stroke="#60a5fa" stroke-width="1" stroke-linecap="round"/>
+                  <line x1="118" y1="126" x2="126" y2="126" stroke="#60a5fa" stroke-width="1" stroke-linecap="round" opacity="0.6"/>
+                  <line x1="118" y1="130" x2="123" y2="130" stroke="#60a5fa" stroke-width="1" stroke-linecap="round" opacity="0.4"/>
+
+                  <!-- Head -->
+                  <circle cx="99" cy="98" r="10" fill="url(#bodyGrad)"/>
+
+                  <!-- Graduation cap -->
+                  <rect x="91" y="90" width="16" height="3" rx="1.5" fill="#1e3a5f"/>
+                  <polygon points="99,84 107,89 99,92 91,89" fill="#1e40af"/>
+                  <polygon points="99,84 107,89 99,92 91,89" fill="url(#bodyGrad)" opacity="0.8"/>
+                  <line x1="107" y1="89" x2="109" y2="94" stroke="#60a5fa" stroke-width="1.2" stroke-linecap="round"/>
+                  <circle cx="109" cy="95" r="2" fill="#fbbf24"/>
+
+                  <!-- Floating star particles -->
+                  <circle cx="30" cy="80" r="1.5" fill="#fbbf24" opacity="0.8">
+                    <animate attributeName="cy" values="80;74;80" dur="3s" repeatCount="indefinite"/>
+                    <animate attributeName="opacity" values="0.8;0.3;0.8" dur="3s" repeatCount="indefinite"/>
+                  </circle>
+                  <circle cx="130" cy="88" r="1" fill="#34d399" opacity="0.7">
+                    <animate attributeName="cy" values="88;82;88" dur="2.5s" repeatCount="indefinite"/>
+                    <animate attributeName="opacity" values="0.7;0.2;0.7" dur="2.5s" repeatCount="indefinite"/>
+                  </circle>
+                  <circle cx="140" cy="105" r="1.5" fill="#60a5fa" opacity="0.6">
+                    <animate attributeName="cy" values="105;99;105" dur="3.5s" repeatCount="indefinite"/>
+                    <animate attributeName="opacity" values="0.6;0.1;0.6" dur="3.5s" repeatCount="indefinite"/>
+                  </circle>
+                  <circle cx="22" cy="100" r="1" fill="#a78bfa" opacity="0.5">
+                    <animate attributeName="cy" values="100;95;100" dur="2.8s" repeatCount="indefinite"/>
+                  </circle>
+
+                  <!-- Decorative ring -->
+                  <circle cx="99" cy="112" r="34" stroke="rgba(59,130,246,0.1)" stroke-width="1" stroke-dasharray="4 6" fill="none">
+                    <animateTransform attributeName="transform" type="rotate" values="0 99 112;360 99 112" dur="20s" repeatCount="indefinite"/>
+                  </circle>
+                </svg>
             </div>
-            
-            <div class="w-full space-y-4">
-                <button onclick="startNewRequest()" class="w-full p-5 rounded-2xl glass hover:bg-white/5 transition-all active:scale-[0.98] flex items-center justify-between group">
-                    <div class="flex items-center gap-4">
-                        <div class="p-2.5 bg-blue-500/10 rounded-xl text-blue-400 group-hover:bg-blue-500/20 transition-colors"><i data-lucide="zap"></i></div>
-                        <span class="font-semibold text-[17px] text-white">Нова заявка</span>
-                    </div>
-                    <i data-lucide="chevron-right" class="text-slate-500 w-5 h-5"></i>
-                </button>
-                <button onclick="showPage('page-my-orders-menu')" class="w-full p-5 rounded-2xl glass hover:bg-white/5 transition-all active:scale-[0.98] flex items-center justify-between group">
-                    <div class="flex items-center gap-4">
-                        <div class="p-2.5 bg-emerald-500/10 rounded-xl text-emerald-400 group-hover:bg-emerald-500/20 transition-colors"><i data-lucide="layers"></i></div>
-                        <span class="font-semibold text-[17px] text-white">Мої заявки</span>
-                    </div>
-                    <i data-lucide="chevron-right" class="text-slate-500 w-5 h-5"></i>
-                </button>
-                <button onclick="openProfileFromMenu()" class="w-full p-5 rounded-2xl glass hover:bg-white/5 transition-all active:scale-[0.98] flex items-center justify-between group">
-                    <div class="flex items-center gap-4">
-                        <div class="p-2.5 bg-purple-500/10 rounded-xl text-purple-400 group-hover:bg-purple-500/20 transition-colors"><i data-lucide="user-cog"></i></div>
-                        <span class="font-semibold text-[17px] text-white">Власний кабінет</span>
-                    </div>
-                    <i data-lucide="chevron-right" class="text-slate-500 w-5 h-5"></i>
-                </button>
+            <h1 style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:#f1f5f9;margin-bottom:6px;letter-spacing:-0.02em;">Польовий тренер</h1>
+            <p style="font-family:'Syne',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;background:linear-gradient(135deg,#60a5fa,#34d399);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Створення заявки на візит</p>
+        </div>
+
+        <!-- Stats strip: Активна / Скасована / Цього місяця -->
+        <div class="stats-strip" id="home-stats" style="margin-bottom:16px;">
+            <div class="stat-tile" style="border-color:rgba(16,185,129,0.15);cursor:pointer;" onclick="loadOrders('Активна')">
+                <div class="stat-num" style="color:#34d399;" id="stat-active">—</div>
+                <div class="stat-lbl" style="color:#34d399;opacity:0.7;">Активні</div>
+            </div>
+            <div class="stat-tile" style="border-color:rgba(239,68,68,0.15);cursor:pointer;" onclick="loadOrders('Скасована')">
+                <div class="stat-num" style="color:#f87171;" id="stat-cancel">—</div>
+                <div class="stat-lbl" style="color:#f87171;opacity:0.7;">Скасовані</div>
+            </div>
+            <div class="stat-tile" style="border-color:rgba(96,165,250,0.15);">
+                <div class="stat-num" style="color:#60a5fa;" id="stat-month">—</div>
+                <div class="stat-lbl" style="color:#60a5fa;opacity:0.7;">Цей місяць</div>
             </div>
         </div>
 
-        <div id="page-my-orders-menu" class="page-section hidden pt-6">
-            <div class="flex items-center mb-8 gap-3">
-                <button onclick="showPage('page-1')" class="text-slate-400 hover:text-white p-2 rounded-xl glass-input active:scale-95"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
-                <h2 class="text-xl font-bold gradient-text-primary">Мої заявки</h2>
+        <!-- Main CTA -->
+        <div class="main-cta" onclick="startNewRequest()" style="margin-top:16px;">
+            <div class="cta-icon-wrap">⚡</div>
+            <div>
+                <div class="cta-title">Нова заявка</div>
+                <div class="cta-sub">Створити запит на візит</div>
             </div>
-            <div class="w-full space-y-4">
-                <button onclick="loadOrders('Активна')" class="w-full p-5 rounded-2xl glass transition-all active:scale-[0.98] flex items-center gap-4 border-l-4 border-l-emerald-500 hover:bg-emerald-500/5">
-                    <i data-lucide="activity" class="text-emerald-400 w-6 h-6"></i>
-                    <span class="font-semibold text-[17px] text-white">Активні</span>
-                </button>
-                <button onclick="loadOrders('Скасована')" class="w-full p-5 rounded-2xl glass transition-all active:scale-[0.98] flex items-center gap-4 border-l-4 border-l-red-500 hover:bg-red-500/5">
-                    <i data-lucide="x-octagon" class="text-red-400 w-6 h-6"></i>
-                    <span class="font-semibold text-[17px] text-white">Скасовані</span>
-                </button>
-                <button onclick="loadOrders('Архів')" class="w-full p-5 rounded-2xl glass transition-all active:scale-[0.98] flex items-center gap-4 border-l-4 border-l-slate-500 hover:bg-slate-500/5">
-                    <i data-lucide="archive" class="text-slate-400 w-6 h-6"></i>
-                    <span class="font-semibold text-[17px] text-white">Архівні</span>
-                </button>
-            </div>
+            <div class="cta-arrow">›</div>
         </div>
 
-        <div id="page-orders-list" class="page-section hidden pt-6">
-            <div class="flex items-center mb-8 gap-3">
-                <button onclick="showPage('page-my-orders-menu')" class="text-slate-400 hover:text-white p-2 rounded-xl glass-input active:scale-95"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
-                <h2 id="orders-list-title" class="text-xl font-bold text-white flex items-center gap-2">...</h2>
+        <!-- Secondary actions -->
+        <div class="sec-grid">
+            <div class="sec-tile" onclick="showPage('page-my-orders-menu')">
+                <div class="sec-tile-icon">📋</div>
+                <div class="sec-tile-label">Мої заявки</div>
+                <div class="sec-tile-sub">Активні / Архів</div>
             </div>
-            <div id="orders-loading" class="text-center text-slate-400 py-10 glass rounded-2xl">
-                <div class="loader"></div>
-                <p class="text-sm" id="orders-status-text">Синхронізація бази...</p>
-            </div>
-            <div id="orders-container" class="space-y-5 hidden"></div>
-        </div>
-
-        <div id="page-cancel-reason" class="page-section hidden pt-6">
-            <div class="flex items-center mb-8 gap-3">
-                <button onclick="showPage('page-orders-list')" class="text-slate-400 hover:text-white p-2 rounded-xl glass-input active:scale-95"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
-                <h2 class="text-xl font-bold text-red-400">Скасування візиту</h2>
-            </div>
-            <div class="glass p-6 rounded-2xl flex flex-col h-[60vh] border border-red-500/20">
-                <label class="text-sm font-semibold text-slate-300 mb-2 flex items-center gap-2"><i data-lucide="message-square-warning" class="w-4 h-4 text-slate-400"></i> Детально опишіть причину</label>
-                <textarea id="cancel-reason-text" placeholder="Причина скасування..." class="w-full flex-1 p-4 rounded-xl glass-input resize-none text-[15px] leading-relaxed"></textarea>
-                <div class="flex gap-3 mt-5">
-                    <button onclick="showPage('page-orders-list')" class="flex-1 bg-slate-700/50 hover:bg-slate-700 text-white p-4 rounded-xl font-semibold transition-colors active:scale-95">Назад</button>
-                    <button onclick="submitCancellation()" class="flex-1 bg-red-600/90 hover:bg-red-500 text-white p-4 rounded-xl font-semibold transition-colors shadow-lg shadow-red-900/50 active:scale-95">Скасувати</button>
-                </div>
-            </div>
-        </div>
-
-        <div id="page-2" class="page-section hidden pt-6">
-            <div class="flex items-center mb-8 gap-3">
-                <button onclick="showPage('page-1')" class="text-slate-400 hover:text-white p-2 rounded-xl glass-input active:scale-95"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
-                <h2 class="text-xl font-bold text-white">Мій профіль</h2>
-            </div>
-            <div class="glass p-6 rounded-2xl relative overflow-hidden">
-                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 to-blue-500"></div>
-                <p class="text-xs text-slate-400 mb-6 leading-relaxed">Система збереже ці дані для швидкого автозаповнення в майбутніх заявках.</p>
-                <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5"><i data-lucide="user" class="w-3.5 h-3.5"></i> Ваше ПІБ</label>
-                <input type="text" id="user-fio" placeholder="Прізвище Ім'я По-батькові" class="w-full p-4 rounded-xl mb-6 glass-input text-[15px]">
-                <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5"><i data-lucide="phone" class="w-3.5 h-3.5"></i> Телефон</label>
-                <input type="tel" id="user-phone" placeholder="38 0__ ___ __ __" class="w-full p-4 rounded-xl mb-8 glass-input text-[15px]">
-                <button onclick="saveProfile()" class="w-full bg-blue-600/90 hover:bg-blue-500 p-4 rounded-xl font-semibold text-white transition-all shadow-lg shadow-blue-900/50 active:scale-95">Зберегти дані</button>
-            </div>
-        </div>
-
-        <div id="page-3" class="page-section hidden pt-6">
-            <div class="flex items-center mb-8 gap-3">
-                <button onclick="showPage('page-1')" class="text-slate-400 hover:text-white p-2 rounded-xl glass-input active:scale-95"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
-                <h2 class="text-xl font-bold text-white">Локація та дата</h2>
-            </div>
-            <div class="glass p-6 rounded-2xl space-y-6">
-                <div>
-                    <label class="text-sm font-semibold text-slate-300 mb-2 flex items-center gap-2"><i data-lucide="map-pin" class="w-4 h-4 text-blue-400"></i> Номер АЗК</label>
-                    <input type="text" id="azk-number" placeholder="Наприклад: 15" class="w-full p-4 rounded-xl glass-input text-[15px]">
-                </div>
-                <div>
-                    <label class="text-sm font-semibold text-slate-300 mb-2 flex items-center gap-2"><i data-lucide="calendar" class="w-4 h-4 text-emerald-400"></i> Бажана дата візиту</label>
-                    <input type="date" id="visit-date" class="w-full p-4 rounded-xl glass-input text-slate-300 text-[15px]" style="color-scheme: dark;">
-                </div>
-                <button onclick="goToPage4()" class="w-full bg-blue-600/90 hover:bg-blue-500 p-4 mt-2 rounded-xl font-semibold text-white transition-all shadow-lg shadow-blue-900/50 active:scale-95">Продовжити</button>
-            </div>
-        </div>
-
-        <div id="page-4" class="page-section hidden pt-6">
-            <div class="flex items-center mb-8 gap-3">
-                <button onclick="showPage('page-3')" class="text-slate-400 hover:text-white p-2 rounded-xl glass-input active:scale-95"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
-                <h2 class="text-xl font-bold text-white">Деталі виклику</h2>
-            </div>
-            <div class="glass p-6 rounded-2xl space-y-6">
-                <div>
-                    <label class="text-sm font-semibold text-slate-300 mb-2 flex items-center gap-2"><i data-lucide="alert-triangle" class="w-4 h-4 text-amber-400"></i> Пріоритет та Причина</label>
-                    <select id="priority" class="w-full p-4 rounded-xl glass-input mb-4 text-[15px] appearance-none">
-                        <option value="empty" disabled selected>Оберіть пріоритет...</option>
-                        <option value="🚨 Звичайна">🚨 Звичайна</option>
-                        <option value="🚨 Термінова">🚨 Термінова</option>
-                        <option value="🚨 Критична">🚨 Критична</option>
-                    </select>
-                    <select id="reason" class="w-full p-4 rounded-xl glass-input text-[15px] appearance-none" onchange="checkOtherReason(this)">
-                        <option value="empty" disabled selected>Причина виклику...</option>
-                        <option value="Новачок 🎓">Новачок 🎓</option>
-                        <option value="Алгоритм 🔁">Алгоритм 🔁</option>
-                        <option value="Показники 📉">Показники 📉</option>
-                        <option value="Скарги 🗣️">Скарги 🗣️</option>
-                        <option value="Інше">Інше 🔖</option>
-                    </select>
-                    <div id="other-reason-container" class="hidden mt-4 animate-fade">
-                        <input type="text" id="other-reason" placeholder="Опишіть вашу причину..." class="w-full p-4 rounded-xl glass-input text-[15px]">
-                    </div>
-                </div>
-                <div class="border-t border-white/10 pt-5">
-                    <label class="text-sm font-semibold text-slate-300 mb-2 flex items-center gap-2"><i data-lucide="users" class="w-4 h-4 text-purple-400"></i> З ким працювати</label>
-                    <input type="text" id="target-name" placeholder="ПІБ співробітника" class="w-full p-4 rounded-xl glass-input mb-3 text-[15px]">
-                    <input type="tel" id="target-phone" placeholder="Телефон: 38 0__ ___ __ __" class="w-full p-4 rounded-xl glass-input text-[15px]">
-                    <p class="text-[11px] text-slate-500 mt-2 flex gap-1"><i data-lucide="info" class="w-3.5 h-3.5 flex-shrink-0"></i> Не обов'язково, але пришвидшить комунікацію</p>
-                </div>
-                <button onclick="goToPage5()" class="w-full bg-blue-600/90 hover:bg-blue-500 p-4 rounded-xl font-semibold text-white transition-all shadow-lg shadow-blue-900/50 active:scale-95">Продовжити</button>
-            </div>
-        </div>
-
-        <div id="page-5" class="page-section hidden pt-6">
-            <div class="flex items-center mb-8 gap-3">
-                <button onclick="showPage('page-4')" class="text-slate-400 hover:text-white p-2 rounded-xl glass-input active:scale-95"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
-                <h2 class="text-xl font-bold text-white">Опис ситуації</h2>
-            </div>
-            <div class="glass p-6 rounded-2xl flex flex-col h-[60vh]">
-                <label class="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2"><i data-lucide="text-align-left" class="w-4 h-4 text-slate-400"></i> Що саме відбулось?</label>
-                <textarea id="desc" placeholder="Детально опишіть ситуацію на АЗК..." class="w-full flex-1 p-4 rounded-xl glass-input resize-none text-[15px] leading-relaxed"></textarea>
-                <button onclick="goToPage6()" class="w-full bg-blue-600/90 hover:bg-blue-500 p-4 rounded-xl font-semibold text-white transition-all shadow-lg shadow-blue-900/50 active:scale-95 mt-5">Продовжити</button>
-            </div>
-        </div>
-
-        <div id="page-6" class="page-section hidden pt-6">
-            <div class="flex items-center mb-8 gap-3">
-                <button onclick="showPage('page-5')" class="text-slate-400 hover:text-white p-2 rounded-xl glass-input active:scale-95"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
-                <h2 class="text-xl font-bold text-white">Очікування</h2>
-            </div>
-            <div class="glass p-6 rounded-2xl flex flex-col h-[60vh]">
-                <label class="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2"><i data-lucide="target" class="w-4 h-4 text-emerald-400"></i> Який результат потрібен?</label>
-                <textarea id="result" placeholder="Опишіть ідеальне вирішення ситуації..." class="w-full flex-1 p-4 rounded-xl glass-input resize-none text-[15px] leading-relaxed"></textarea>
-                <button onclick="goToPage7()" class="w-full bg-emerald-600/90 hover:bg-emerald-500 p-4 rounded-xl font-semibold text-white transition-all shadow-lg shadow-emerald-900/50 active:scale-95 mt-5">Перевірити заявку</button>
-            </div>
-        </div>
-
-        <div id="page-7" class="page-section hidden pt-6 w-full pb-10">
-            <div class="flex items-center mb-6 gap-3">
-                <button onclick="showPage('page-6')" class="text-slate-400 hover:text-white p-2 rounded-xl glass-input active:scale-95"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
-                <h2 class="text-xl font-bold text-white">Підтвердження</h2>
-            </div>
-            
-            <div class="glass p-6 rounded-2xl text-[14px] leading-relaxed shadow-lg relative overflow-hidden w-full">
-                <div class="absolute top-0 left-0 w-full h-1 bg-emerald-500"></div>
-                
-                <div class="flex items-center gap-3 mb-6">
-                    <div class="p-2 bg-emerald-500/20 rounded-lg"><i data-lucide="clipboard-check" class="text-emerald-400 w-5 h-5"></i></div>
-                    <span class="font-bold text-lg text-emerald-300">Заявка на візит тренера</span>
-                </div>
-
-                <div class="space-y-2 mb-6">
-                    <div class="flex justify-between border-b border-white/5 pb-2"><span class="text-slate-400">Замовник</span> <span id="sum-fio" class="font-medium text-white text-right"></span></div>
-                    <div class="flex justify-between border-b border-white/5 pb-2"><span class="text-slate-400">Telephone</span> <span id="sum-phone" class="font-medium text-white"></span></div>
-                    <div class="flex justify-between border-b border-white/5 pb-2"><span class="text-slate-400">Створено</span> <span id="sum-date-created" class="font-medium text-white"></span></div>
-                    <div class="flex justify-between border-b border-white/5 pb-2"><span class="text-slate-400">Пріоритет</span> <span id="sum-priority" class="font-semibold text-amber-400"></span></div>
-                    <div class="flex justify-between border-b border-white/5 pb-2"><span class="text-slate-400">Локація АЗК</span> <span id="sum-azk" class="font-medium text-white"></span></div>
-                    <div class="flex justify-between border-b border-white/5 pb-2"><span class="text-slate-400">Дата візиту</span> <span id="sum-visit-date" class="font-bold text-blue-400"></span></div>
-                </div>
-
-                <div class="bg-white/5 p-4 rounded-xl border border-white/5 mb-5">
-                    <span class="text-xs text-slate-400 uppercase tracking-wider font-semibold block mb-1">Співробітник</span>
-                    <div id="sum-target" class="font-medium text-white"></div>
-                    <div id="sum-target-phone" class="text-slate-300 text-sm mt-0.5"></div>
-                </div>
-
-                <div class="space-y-5">
-                    <div>
-                        <span class="text-xs text-slate-400 uppercase tracking-wider font-semibold flex items-center gap-1.5 mb-1"><i data-lucide="help-circle" class="w-3.5 h-3.5"></i> Причина</span>
-                        <div id="sum-reason" class="font-medium text-white bg-white/5 p-3 rounded-lg border border-white/5"></div>
-                    </div>
-                    <div>
-                        <span class="text-xs text-slate-400 uppercase tracking-wider font-semibold flex items-center gap-1.5 mb-1"><i data-lucide="text" class="w-3.5 h-3.5"></i> Опис ситуації</span>
-                        <div id="sum-desc" class="text-slate-200 mt-1 whitespace-pre-wrap break-words leading-relaxed text-[15px]"></div>
-                    </div>
-                    <div>
-                        <span class="text-xs text-slate-400 uppercase tracking-wider font-semibold flex items-center gap-1.5 mb-1"><i data-lucide="target" class="w-3.5 h-3.5"></i> Очікування</span>
-                        <div id="sum-result" class="text-slate-200 mt-1 whitespace-pre-wrap break-words leading-relaxed text-[15px]"></div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="flex gap-3 mt-6">
-                <button onclick="showPage('page-3')" class="flex-1 bg-slate-700/50 hover:bg-slate-700 text-white p-4 rounded-xl font-semibold transition-colors active:scale-95">Редагувати</button>
-                <button id="btn-submit" onclick="submitForm()" class="flex-1 bg-emerald-600/90 hover:bg-emerald-500 p-4 rounded-xl font-semibold text-white transition-all shadow-lg shadow-emerald-900/50 active:scale-95 flex justify-center items-center gap-2">
-                    <i data-lucide="send" class="w-5 h-5"></i> Відправити
-                </button>
+            <div class="sec-tile" onclick="openProfileFromMenu()">
+                <div class="sec-tile-icon">⚙️</div>
+                <div class="sec-tile-label">Профіль</div>
+                <div class="sec-tile-sub">Мої дані</div>
             </div>
         </div>
     </div>
 
-    <script>
-        const tg = window.Telegram?.WebApp;
-        if(tg) { tg.expand(); }
-        const TELEGRAM_ID = tg?.initDataUnsafe?.user?.id || "BROWSER_TEST_MODE";
-        let currentCancellingOrderId = null; 
+    <!-- ══════════════════════ PAGE: MY ORDERS MENU ══════════════════════ -->
+    <div id="page-my-orders-menu" class="page-section hidden">
+        <div class="page-header">
+            <button class="btn-back" onclick="showPage('page-1')"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
+            <h2>Мої заявки</h2>
+        </div>
 
-        // ОНОВЛЕНО: ВСТАВЛЕНО ВАШ ОСТАННІЙ НОВИЙ ВЕБ-ХУК
-        const WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbyHUx18-Ji5txt89MdAh5dUFe6zij8N7T9jrkWCbwi56QJ3tjfA1zYbD99RgABFr7s9/exec"; 
+        <!-- Big card: Активні -->
+        <div onclick="loadOrders('Активна')" style="
+            position:relative;overflow:hidden;border-radius:22px;padding:24px;margin-bottom:12px;cursor:pointer;
+            background:linear-gradient(135deg,rgba(16,185,129,0.18) 0%,rgba(16,185,129,0.05) 100%);
+            border:1px solid rgba(16,185,129,0.25);
+            transition:transform 0.15s,border-color 0.15s;
+            active:scale(0.98);"
+            onpointerdown="this.style.transform='scale(0.98)'" onpointerup="this.style.transform='scale(1)'" onpointerleave="this.style.transform='scale(1)'">
+            <!-- BG glow -->
+            <div style="position:absolute;top:-30px;right:-30px;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,rgba(16,185,129,0.3),transparent 70%);pointer-events:none;"></div>
+            <div style="display:flex;align-items:center;gap:16px;">
+                <div style="width:56px;height:56px;border-radius:16px;background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+                </div>
+                <div style="flex:1;">
+                    <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:#34d399;margin-bottom:2px;">Активні</div>
+                    <div style="font-size:12px;color:rgba(52,211,153,0.6);">Відкриті заявки в роботі</div>
+                </div>
+                <div style="text-align:right;">
+                    <div id="menu-stat-active" style="font-family:'Syne',sans-serif;font-size:32px;font-weight:800;color:#34d399;line-height:1;">—</div>
+                    <div style="font-size:10px;color:rgba(52,211,153,0.5);text-transform:uppercase;letter-spacing:0.1em;">заявок</div>
+                </div>
+            </div>
+        </div>
 
-        function vibrate(style = 'light') {
-            if (tg && tg.HapticFeedback) {
-                if (style === 'error' || style === 'success' || style === 'warning') { tg.HapticFeedback.notificationOccurred(style); } 
-                else { tg.HapticFeedback.impactOccurred(style); }
-            }
+        <!-- Two smaller cards in a row -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+
+            <!-- Скасовані -->
+            <div onclick="loadOrders('Скасована')" style="
+                position:relative;overflow:hidden;border-radius:18px;padding:20px 16px;cursor:pointer;
+                background:linear-gradient(135deg,rgba(239,68,68,0.15) 0%,rgba(239,68,68,0.04) 100%);
+                border:1px solid rgba(239,68,68,0.22);
+                transition:transform 0.15s;"
+                onpointerdown="this.style.transform='scale(0.97)'" onpointerup="this.style.transform='scale(1)'" onpointerleave="this.style.transform='scale(1)'">
+                <div style="position:absolute;top:-20px;right:-20px;width:80px;height:80px;border-radius:50%;background:radial-gradient(circle,rgba(239,68,68,0.25),transparent 70%);pointer-events:none;"></div>
+                <div style="width:42px;height:42px;border-radius:12px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.25);display:flex;align-items:center;justify-content:center;margin-bottom:14px;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                </div>
+                <div id="menu-stat-cancel" style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:#f87171;line-height:1;margin-bottom:4px;">—</div>
+                <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:#f87171;margin-bottom:2px;">Скасовані</div>
+                <div style="font-size:10px;color:rgba(248,113,113,0.5);">Відхилені</div>
+            </div>
+
+            <!-- Архівні -->
+            <div onclick="loadOrders('Архів')" style="
+                position:relative;overflow:hidden;border-radius:18px;padding:20px 16px;cursor:pointer;
+                background:linear-gradient(135deg,rgba(100,116,139,0.15) 0%,rgba(100,116,139,0.04) 100%);
+                border:1px solid rgba(100,116,139,0.2);
+                transition:transform 0.15s;"
+                onpointerdown="this.style.transform='scale(0.97)'" onpointerup="this.style.transform='scale(1)'" onpointerleave="this.style.transform='scale(1)'">
+                <div style="position:absolute;top:-20px;right:-20px;width:80px;height:80px;border-radius:50%;background:radial-gradient(circle,rgba(100,116,139,0.2),transparent 70%);pointer-events:none;"></div>
+                <div style="width:42px;height:42px;border-radius:12px;background:rgba(100,116,139,0.1);border:1px solid rgba(100,116,139,0.2);display:flex;align-items:center;justify-content:center;margin-bottom:14px;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+                </div>
+                <div id="menu-stat-archive" style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:#94a3b8;line-height:1;margin-bottom:4px;">—</div>
+                <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:#94a3b8;margin-bottom:2px;">Архівні</div>
+                <div style="font-size:10px;color:rgba(148,163,184,0.5);">Завершені</div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ══════════════════════ PAGE: ORDERS LIST ══════════════════════ -->
+    <div id="page-orders-list" class="page-section hidden">
+        <div class="page-header">
+            <button class="btn-back" onclick="showPage('page-my-orders-menu')"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
+            <h2 id="orders-list-title">...</h2>
+        </div>
+        <div id="orders-loading" class="text-center py-12" style="color:#475569;">
+            <div class="loader"></div>
+            <p style="font-size:13px;">Завантаження...</p>
+        </div>
+        <div id="orders-container" class="hidden"></div>
+    </div>
+
+    <!-- ══════════════════════ PAGE: CANCEL REASON ══════════════════════ -->
+    <div id="page-cancel-reason" class="page-section hidden">
+        <div class="page-header">
+            <button class="btn-back" onclick="showPage('page-orders-list')"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
+            <h2 style="color:#f87171;">Скасування</h2>
+        </div>
+        <div class="glass rounded-2xl p-5 flex flex-col" style="min-height:55vh;border-color:rgba(239,68,68,0.2);">
+            <div class="field-label" style="margin-bottom:8px;"><i data-lucide="message-square-warning" class="w-3.5 h-3.5"></i> Причина скасування</div>
+            <textarea id="cancel-reason-text" placeholder="Детально опишіть причину..." class="w-full flex-1 p-4 rounded-xl glass-input resize-none text-[14px] leading-relaxed" style="min-height:180px;"></textarea>
+            <div class="form-bottom-nav" style="margin-top:16px;">
+                <button onclick="showPage('page-orders-list')" class="btn-primary btn-secondary" style="flex:0.6;">Назад</button>
+                <button onclick="submitCancellation()" class="btn-primary btn-danger" style="flex:1;">Скасувати заявку</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════ PAGE 2: PROFILE ══════════════════════ -->
+    <div id="page-2" class="page-section hidden">
+        <div class="page-header">
+            <button class="btn-back" onclick="showPage('page-1')"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
+            <h2>Мій профіль</h2>
+        </div>
+
+        <!-- Avatar hero block -->
+        <div style="text-align:center;padding:8px 0 28px;position:relative;">
+            <!-- Glow behind avatar -->
+            <div style="position:absolute;top:10px;left:50%;transform:translateX(-50%);width:100px;height:100px;border-radius:50%;background:radial-gradient(circle,rgba(99,102,241,0.35),transparent 70%);filter:blur(16px);pointer-events:none;"></div>
+
+            <!-- Avatar ring -->
+            <div style="position:relative;display:inline-block;">
+                <div style="width:88px;height:88px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#3b82f6,#10b981);padding:2px;margin:0 auto;">
+                    <div style="width:100%;height:100%;border-radius:50%;background:#0d1420;display:flex;align-items:center;justify-content:center;">
+                        <div id="profile-avatar-text" style="font-family:'Syne',sans-serif;font-size:26px;font-weight:800;background:linear-gradient(135deg,#818cf8,#60a5fa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">?</div>
+                    </div>
+                </div>
+                <!-- Edit badge -->
+                <div style="position:absolute;bottom:2px;right:2px;width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#3b82f6);border:2px solid #0d1420;display:flex;align-items:center;justify-content:center;">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </div>
+            </div>
+
+            <div id="profile-name-display" style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:#f1f5f9;margin-top:12px;margin-bottom:3px;">—</div>
+            <div id="profile-phone-display" style="font-size:13px;color:#475569;">Не заповнено</div>
+        </div>
+
+        <!-- Fields card -->
+        <div style="background:rgba(15,23,42,0.6);border:1px solid rgba(255,255,255,0.07);border-radius:20px;overflow:hidden;margin-bottom:12px;">
+
+            <!-- FIO row -->
+            <div style="padding:16px 18px;border-bottom:1px solid rgba(255,255,255,0.05);">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                    <div style="width:32px;height:32px;border-radius:9px;background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    </div>
+                    <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:#6366f1;">ПІБ</div>
+                </div>
+                <input type="text" id="user-fio"
+                    placeholder="Прізвище Ім'я По-батькові"
+                    class="glass-input text-[15px]"
+                    oninput="updateProfilePreview()"
+                    style="width:100%;padding:12px 14px;border-radius:12px;font-size:15px;">
+            </div>
+
+            <!-- Phone row -->
+            <div style="padding:16px 18px;">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                    <div style="width:32px;height:32px;border-radius:9px;background:rgba(59,130,246,0.12);border:1px solid rgba(59,130,246,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 012 1.18 2 2 0 014 0h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 14.92z"/></svg>
+                    </div>
+                    <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:#3b82f6;">Телефон</div>
+                </div>
+                <input type="tel" id="user-phone"
+                    placeholder="38 0__ ___ __ __"
+                    class="glass-input text-[15px]"
+                    oninput="updateProfilePreview()"
+                    style="width:100%;padding:12px 14px;border-radius:12px;font-size:15px;">
+            </div>
+        </div>
+
+        <!-- Save button -->
+        <button onclick="saveProfile()" class="btn-primary" style="background:linear-gradient(135deg,#4f46e5,#2563eb);box-shadow:0 6px 20px rgba(79,70,229,0.35);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" style="flex-shrink:0;"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            Зберегти профіль
+        </button>
+
+        <p style="text-align:center;font-size:11px;color:#334155;margin-top:14px;line-height:1.5;">
+            Дані зберігаються локально на пристрої<br>та використовуються для автозаповнення форм
+        </p>
+    </div>
+
+    <!-- ══════════════════════ PAGE 3: LOCATION ══════════════════════ -->
+    <div id="page-3" class="page-section hidden">
+        <div class="page-header">
+            <button class="btn-back" onclick="showPage('page-1')"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
+            <h2>Локація та дата</h2>
+        </div>
+        <!-- Progress -->
+        <div class="progress-wrap">
+            <div class="progress-steps">
+                <div class="progress-step active"></div>
+                <div class="progress-step idle"></div>
+                <div class="progress-step idle"></div>
+                <div class="progress-step idle"></div>
+                <div class="progress-step idle"></div>
+            </div>
+            <div class="progress-label"><span class="current-step">Локація</span><span>1 / 5</span></div>
+        </div>
+        <div class="glass rounded-2xl p-5 space-y-5">
+            <div>
+                <div class="field-label"><i data-lucide="map-pin" class="w-3.5 h-3.5" style="color:#60a5fa;"></i> Номер АЗК</div>
+                <input type="text" inputmode="numeric" id="azk-number" placeholder="Наприклад: 15" class="w-full p-4 rounded-xl glass-input text-[15px]" oninput="this.value=this.value.replace(/\D/g,'')" maxlength="6">
+            </div>
+            <div>
+                <div class="field-label"><i data-lucide="calendar" class="w-3.5 h-3.5" style="color:#34d399;"></i> Бажана дата візиту</div>
+                <input type="date" id="visit-date" class="w-full p-4 rounded-xl glass-input text-[15px]">
+            </div>
+            <button onclick="goToPage4()" class="btn-primary">Продовжити →</button>
+        </div>
+    </div>
+
+    <!-- ══════════════════════ PAGE 4: DETAILS ══════════════════════ -->
+    <div id="page-4" class="page-section hidden">
+        <div class="page-header">
+            <button class="btn-back" onclick="showPage('page-3')"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
+            <h2>Деталі виклику</h2>
+        </div>
+        <div class="progress-wrap">
+            <div class="progress-steps">
+                <div class="progress-step done"></div>
+                <div class="progress-step active"></div>
+                <div class="progress-step idle"></div>
+                <div class="progress-step idle"></div>
+                <div class="progress-step idle"></div>
+            </div>
+            <div class="progress-label"><span class="current-step">Деталі</span><span>2 / 5</span></div>
+        </div>
+        <div class="glass rounded-2xl p-5 space-y-5">
+            <!-- Priority chips -->
+            <div>
+                <div class="field-label"><i data-lucide="alert-triangle" class="w-3.5 h-3.5" style="color:#f59e0b;"></i> Пріоритет</div>
+                <div class="prio-chips" id="prio-chips">
+                    <div class="prio-chip active-norm" onclick="selectPriority(this,'🚨 Звичайна','active-norm')">
+                        <span class="chip-emoji">🔵</span>Звичайна
+                    </div>
+                    <div class="prio-chip" onclick="selectPriority(this,'🚨 Термінова','active-urgent')">
+                        <span class="chip-emoji">🟡</span>Термінова
+                    </div>
+                    <div class="prio-chip" onclick="selectPriority(this,'🚨 Критична','active-crit')">
+                        <span class="chip-emoji">🔴</span>Критична
+                    </div>
+                </div>
+                <input type="hidden" id="priority" value="🚨 Звичайна">
+            </div>
+            <!-- Reason -->
+            <div>
+                <div class="field-label"><i data-lucide="help-circle" class="w-3.5 h-3.5"></i> Причина виклику</div>
+                <select id="reason" class="w-full p-4 rounded-xl glass-input text-[15px] appearance-none" onchange="checkOtherReason(this)">
+                    <option value="empty" disabled selected>Оберіть причину...</option>
+                    <option value="Новачок 🎓">Новачок 🎓</option>
+                    <option value="Алгоритм 🔁">Алгоритм 🔁</option>
+                    <option value="Показники 📉">Показники 📉</option>
+                    <option value="Скарги 🗣️">Скарги 🗣️</option>
+                    <option value="Інше">Інше 🔖</option>
+                </select>
+                <div id="other-reason-container" class="hidden" style="margin-top:10px;">
+                    <input type="text" id="other-reason" placeholder="Опишіть причину..." class="w-full p-4 rounded-xl glass-input text-[15px] animate-fade">
+                </div>
+            </div>
+            <!-- Target -->
+            <div style="border-top:1px solid rgba(255,255,255,0.06);padding-top:18px;">
+                <div class="field-label"><i data-lucide="users" class="w-3.5 h-3.5" style="color:#a78bfa;"></i> З ким працювати</div>
+                <input type="text" id="target-name" placeholder="ПІБ співробітника" class="w-full p-4 rounded-xl glass-input mb-3 text-[15px]" oninput="this.value=this.value.replace(/[0-9]/g,'')">
+                <input type="tel" id="target-phone" placeholder="Телефон: 38 0__ ___ __ __" class="w-full p-4 rounded-xl glass-input text-[15px]">
+                <p style="font-size:11px;color:#475569;margin-top:6px;display:flex;align-items:center;gap:4px;"><i data-lucide="info" class="w-3.5 h-3.5 flex-shrink-0"></i> Не обов'язково, але пришвидшить комунікацію</p>
+            </div>
+            <button onclick="goToPage5()" class="btn-primary">Продовжити →</button>
+        </div>
+    </div>
+
+    <!-- ══════════════════════ PAGE 5: DESCRIPTION ══════════════════════ -->
+    <div id="page-5" class="page-section hidden">
+        <div class="page-header">
+            <button class="btn-back" onclick="showPage('page-4')"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
+            <h2>Опис ситуації</h2>
+        </div>
+        <div class="progress-wrap">
+            <div class="progress-steps">
+                <div class="progress-step done"></div>
+                <div class="progress-step done"></div>
+                <div class="progress-step active"></div>
+                <div class="progress-step idle"></div>
+                <div class="progress-step idle"></div>
+            </div>
+            <div class="progress-label"><span class="current-step">Ситуація</span><span>3 / 5</span></div>
+        </div>
+        <div class="glass rounded-2xl p-5 flex flex-col" style="min-height:55vh;">
+            <div class="field-label" style="margin-bottom:8px;"><i data-lucide="file-text" class="w-3.5 h-3.5"></i> Що саме відбулось?</div>
+            <textarea id="desc" placeholder="Детально опишіть ситуацію на АЗК..." class="w-full flex-1 p-4 rounded-xl glass-input resize-none text-[15px] leading-relaxed" style="min-height:200px;"></textarea>
+            <button onclick="goToPage6()" class="btn-primary" style="margin-top:14px;">Продовжити →</button>
+        </div>
+    </div>
+
+    <!-- ══════════════════════ PAGE 6: EXPECTATIONS ══════════════════════ -->
+    <div id="page-6" class="page-section hidden">
+        <div class="page-header">
+            <button class="btn-back" onclick="showPage('page-5')"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
+            <h2>Очікування</h2>
+        </div>
+        <div class="progress-wrap">
+            <div class="progress-steps">
+                <div class="progress-step done"></div>
+                <div class="progress-step done"></div>
+                <div class="progress-step done"></div>
+                <div class="progress-step active"></div>
+                <div class="progress-step idle"></div>
+            </div>
+            <div class="progress-label"><span class="current-step">Результат</span><span>4 / 5</span></div>
+        </div>
+        <div class="glass rounded-2xl p-5 flex flex-col" style="min-height:55vh;">
+            <div class="field-label" style="margin-bottom:8px;"><i data-lucide="target" class="w-3.5 h-3.5" style="color:#34d399;"></i> Який результат потрібен?</div>
+            <textarea id="result" placeholder="Опишіть ідеальне вирішення ситуації..." class="w-full flex-1 p-4 rounded-xl glass-input resize-none text-[15px] leading-relaxed" style="min-height:200px;"></textarea>
+            <button onclick="goToPage7()" class="btn-primary btn-success" style="margin-top:14px;">Перевірити заявку →</button>
+        </div>
+    </div>
+
+    <!-- ══════════════════════ PAGE 7: CONFIRM ══════════════════════ -->
+    <div id="page-7" class="page-section hidden">
+        <div class="page-header">
+            <button class="btn-back" onclick="showPage('page-6')"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
+            <h2>Підтвердження</h2>
+        </div>
+        <div class="progress-wrap">
+            <div class="progress-steps">
+                <div class="progress-step done"></div>
+                <div class="progress-step done"></div>
+                <div class="progress-step done"></div>
+                <div class="progress-step done"></div>
+                <div class="progress-step active"></div>
+            </div>
+            <div class="progress-label"><span class="current-step">Перевірка</span><span>5 / 5</span></div>
+        </div>
+
+        <div class="glass rounded-2xl p-5" style="position:relative;overflow:hidden;margin-bottom:14px;min-width:0;box-sizing:border-box;">
+            <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#10b981,#3b82f6);"></div>
+
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;">
+                <div style="width:36px;height:36px;border-radius:10px;background:rgba(16,185,129,0.12);display:flex;align-items:center;justify-content:center;font-size:18px;">📋</div>
+                <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:#34d399;">Заявка на візит тренера</div>
+            </div>
+
+            <div style="display:grid;gap:8px;margin-bottom:16px;">
+                <div style="display:flex;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.05);padding-bottom:7px;">
+                    <span style="font-size:12px;color:#475569;">Замовник</span>
+                    <span id="sum-fio" style="font-size:13px;font-weight:600;text-align:right;max-width:60%;"></span>
+                </div>
+                <div style="display:flex;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.05);padding-bottom:7px;">
+                    <span style="font-size:12px;color:#475569;">Телефон</span>
+                    <span id="sum-phone" style="font-size:13px;font-weight:600;"></span>
+                </div>
+                <div style="display:flex;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.05);padding-bottom:7px;">
+                    <span style="font-size:12px;color:#475569;">Створено</span>
+                    <span id="sum-date-created" style="font-size:13px;font-weight:600;color:#94a3b8;"></span>
+                </div>
+                <div style="display:flex;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.05);padding-bottom:7px;">
+                    <span style="font-size:12px;color:#475569;">Пріоритет</span>
+                    <span id="sum-priority" style="font-size:13px;font-weight:700;color:#fbbf24;"></span>
+                </div>
+                <div style="display:flex;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.05);padding-bottom:7px;">
+                    <span style="font-size:12px;color:#475569;">АЗК</span>
+                    <span id="sum-azk" style="font-size:13px;font-weight:600;"></span>
+                </div>
+                <div style="display:flex;justify-content:space-between;">
+                    <span style="font-size:12px;color:#475569;">Дата візиту</span>
+                    <span id="sum-visit-date" style="font-size:14px;font-weight:700;color:#60a5fa;"></span>
+                </div>
+            </div>
+
+            <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:12px;margin-bottom:14px;">
+                <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.1em;font-weight:600;color:#475569;margin-bottom:4px;">Співробітник</div>
+                <div id="sum-target" style="font-size:14px;font-weight:600;"></div>
+                <div id="sum-target-phone" style="font-size:12px;color:#94a3b8;margin-top:2px;"></div>
+            </div>
+
+            <div style="display:grid;gap:12px;">
+                <div>
+                    <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.1em;font-weight:600;color:#475569;margin-bottom:4px;">Причина</div>
+                    <div id="sum-reason" style="font-size:13px;color:#e2e8f0;background:rgba(255,255,255,0.03);padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.05);"></div>
+                </div>
+                <div>
+                    <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.1em;font-weight:600;color:#475569;margin-bottom:4px;">Опис ситуації</div>
+                    <div id="sum-desc" style="font-size:13px;color:#cbd5e1;white-space:pre-wrap;word-break:break-word;overflow-wrap:break-word;line-height:1.6;width:100%;max-width:100%;"></div>
+                </div>
+                <div>
+                    <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.1em;font-weight:600;color:#475569;margin-bottom:4px;">Очікування</div>
+                    <div id="sum-result" style="font-size:13px;color:#cbd5e1;white-space:pre-wrap;word-break:break-word;overflow-wrap:break-word;line-height:1.6;width:100%;max-width:100%;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div style="display:flex;gap:10px;padding-bottom:20px;">
+            <button onclick="showPage('page-3')" class="btn-primary btn-secondary" style="flex:0.7;">Редагувати</button>
+            <button id="btn-submit" onclick="submitForm()" class="btn-primary btn-success" style="flex:1;">
+                <i data-lucide="send" class="w-4 h-4"></i> Відправити
+            </button>
+        </div>
+    </div>
+
+    <!-- ══════════════════════ PAGE: SUCCESS ══════════════════════ -->
+    <div id="page-success" class="page-section hidden" style="padding-top:60px;text-align:center;">
+        <div class="success-circle animate-pop">✅</div>
+        <div style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:#34d399;margin-bottom:6px;">Заявку прийнято!</div>
+        <div style="font-size:14px;color:#64748b;margin-bottom:28px;">Тренер отримає сповіщення</div>
+
+        <div class="success-id-card">
+            <div style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;">Номер заявки</div>
+            <div id="success-order-id" style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:#34d399;">—</div>
+        </div>
+
+        <div style="font-size:12px;color:#475569;line-height:1.7;margin-bottom:24px;">
+            Статус можна відстежити в розділі<br>
+            <span style="color:#60a5fa;">Мої заявки → Активні</span>
+        </div>
+
+        <button onclick="showPage('page-1')" class="btn-primary btn-success">На головну →</button>
+    </div>
+
+    <!-- ══════════════════════ PAGE: ORDER DETAIL ══════════════════════ -->
+    <div id="page-order-detail" class="page-section hidden">
+        <div class="page-header">
+            <button class="btn-back" onclick="showPage('page-orders-list')"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
+            <h2>Деталі заявки</h2>
+        </div>
+
+        <div class="glass rounded-2xl p-5" style="position:relative;overflow:hidden;margin-bottom:14px;">
+            <div id="detail-stripe" style="position:absolute;top:0;left:0;right:0;height:2px;background:#10b981;"></div>
+
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+                <div id="detail-id" style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:#34d399;"></div>
+                <div id="detail-badge"></div>
+            </div>
+
+            <!-- Meta chips -->
+            <div id="detail-chips" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;"></div>
+
+            <div style="height:1px;background:rgba(255,255,255,0.06);margin-bottom:16px;"></div>
+
+            <!-- Fields -->
+            <div style="display:grid;gap:14px;">
+                <div>
+                    <div class="order-field-label">Замовник</div>
+                    <div id="detail-fio" class="order-field-value"></div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                    <div>
+                        <div class="order-field-label">Пріоритет</div>
+                        <div id="detail-priority" style="font-size:13px;font-weight:700;color:#fbbf24;"></div>
+                    </div>
+                    <div>
+                        <div class="order-field-label">Дата візиту</div>
+                        <div id="detail-date" style="font-size:13px;font-weight:700;color:#60a5fa;"></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="order-field-label">Причина виклику</div>
+                    <div id="detail-reason" style="font-size:13px;color:#e2e8f0;background:rgba(255,255,255,0.03);padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.05);"></div>
+                </div>
+                <div>
+                    <div class="order-field-label">Опис ситуації</div>
+                    <div id="detail-desc" class="order-field-value" style="line-height:1.7;"></div>
+                </div>
+                <div>
+                    <div class="order-field-label">Очікування</div>
+                    <div id="detail-result" class="order-field-value" style="line-height:1.7;"></div>
+                </div>
+                <div id="detail-cancel-block" class="hidden">
+                    <div style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.12);border-radius:12px;padding:12px;">
+                        <div id="detail-cancel-date" style="display:flex;align-items:center;gap:6px;color:#f87171;font-weight:700;font-size:13px;margin-bottom:6px;"></div>
+                        <div class="order-field-label" style="margin-bottom:4px;">Причина скасування:</div>
+                        <div id="detail-cancel-reason" class="order-field-value" style="font-style:italic;opacity:0.8;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="detail-cancel-btn-wrap"></div>
+    </div>
+
+
+    <div id="page-cancel-success" class="page-section hidden" style="padding-top:60px;text-align:center;">
+        <div style="width:80px;height:80px;border-radius:50%;background:rgba(239,68,68,0.1);border:2px solid rgba(239,68,68,0.3);display:flex;align-items:center;justify-content:center;font-size:38px;margin:0 auto 20px;box-shadow:0 0 40px rgba(239,68,68,0.2);" class="animate-pop">❌</div>
+        <div style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:#f87171;margin-bottom:6px;">Заявку скасовано</div>
+        <div style="font-size:14px;color:#64748b;margin-bottom:28px;">Статус оновлено в системі</div>
+
+        <div style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:14px;padding:14px;text-align:center;margin-bottom:20px;">
+            <div style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;">Скасована заявка</div>
+            <div id="cancel-success-order-id" style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:#f87171;">—</div>
+        </div>
+
+        <div style="font-size:12px;color:#475569;line-height:1.7;margin-bottom:24px;">
+            Заявку переміщено до розділу<br>
+            <span style="color:#f87171;">Мої заявки → Скасовані</span>
+        </div>
+
+        <div style="display:flex;gap:10px;">
+            <button onclick="loadOrders('Скасована')" class="btn-primary btn-secondary" style="flex:1;">Скасовані</button>
+            <button onclick="showPage('page-1')" class="btn-primary" style="flex:1;background:linear-gradient(135deg,#7f1d1d,#991b1b);box-shadow:0 6px 20px rgba(153,27,27,0.3);">На головну</button>
+        </div>
+    </div>
+
+</div><!-- /page-wrap -->
+
+<script>
+    // ══════════════════════════════════════════
+    // TELEGRAM WEBAPP — ПОВНА ІНІЦІАЛІЗАЦІЯ
+    // ══════════════════════════════════════════
+    const tg = window.Telegram?.WebApp;
+
+    if (tg) {
+        // Розгортаємо на весь екран
+        tg.expand();
+        tg.disableClosingConfirmation();
+
+        // Встановлюємо колір хедера та фону під наш дизайн
+        try {
+            tg.setHeaderColor('#060a12');
+            tg.setBackgroundColor('#060a12');
+        } catch(e) {}
+
+        // Дозволяємо вертикальний свайп (не закривати при свайпі вниз)
+        try { tg.isVerticalSwipesEnabled = false; } catch(e) {}
+    }
+
+    const TELEGRAM_ID = tg?.initDataUnsafe?.user?.id || "BROWSER_TEST_MODE";
+    let currentCancellingOrderId = null;
+    let selectedPriority = '🚨 Звичайна';
+
+    // ── Telegram BackButton — замість фізичної кнопки ──
+    const PAGE_BACK_MAP = {
+        'page-2':              'page-1',
+        'page-3':              'page-1',
+        'page-4':              'page-3',
+        'page-5':              'page-4',
+        'page-6':              'page-5',
+        'page-7':              'page-6',
+        'page-my-orders-menu':'page-1',
+        'page-orders-list':   'page-my-orders-menu',
+        'page-cancel-reason': 'page-orders-list',
+        'page-order-detail':  'page-orders-list',
+        'page-success':        null,  // нема куди — на головну
+        'page-cancel-success': null,
+    };
+    let currentPageId = 'page-1';
+
+    function updateBackButton(pageId) {
+        if (!tg?.BackButton) return;
+        const hasBack = pageId !== 'page-1';
+        hasBack ? tg.BackButton.show() : tg.BackButton.hide();
+    }
+
+    if (tg?.BackButton) {
+        tg.BackButton.onClick(() => {
+            const dest = PAGE_BACK_MAP[currentPageId];
+            if (dest === null) { showPage('page-1'); }
+            else if (dest) { showPage(dest); }
+        });
+    }
+
+    const WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbyHUx18-Ji5txt89MdAh5dUFe6zij8N7T9jrkWCbwi56QJ3tjfA1zYbD99RgABFr7s9/exec";
+
+    function vibrate(style = 'light') {
+        if (tg?.HapticFeedback) {
+            ['error','success','warning'].includes(style)
+                ? tg.HapticFeedback.notificationOccurred(style)
+                : tg.HapticFeedback.impactOccurred(style);
         }
+    }
 
+    // ── iOS: прибрати клавіатуру при тапі поза input ──
+    document.addEventListener('touchstart', function(e) {
+        if (!e.target.closest('input, textarea, select')) {
+            document.activeElement?.blur();
+        }
+    }, { passive: true });
+
+    // ── iOS: фікс скролу коли відкрита клавіатура ──
+    document.addEventListener('focusin', function(e) {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+            setTimeout(() => {
+                e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 300);
+        }
+    });
+
+    lucide.createIcons();
+
+    // ── Quick date ── (removed)
+
+    // ── Profile preview (live update) ──
+    function updateProfilePreview() {
+        const fio   = (document.getElementById('user-fio')?.value || '').trim();
+        const phone = (document.getElementById('user-phone')?.value || '').trim();
+        const parts = fio.split(' ').filter(Boolean);
+        const initials = parts.length >= 2
+            ? (parts[0][0] + parts[1][0]).toUpperCase()
+            : fio.length >= 2 ? fio.substring(0,2).toUpperCase() : (fio[0] || '?').toUpperCase();
+        const avatarEl = document.getElementById('profile-avatar-text');
+        const nameEl   = document.getElementById('profile-name-display');
+        const phoneEl  = document.getElementById('profile-phone-display');
+        if (avatarEl) avatarEl.textContent = initials;
+        if (nameEl)   nameEl.textContent   = fio || '—';
+        if (phoneEl)  phoneEl.textContent  = phone || 'Не заповнено';
+    }
+
+    // ── Priority chips ──
+    function selectPriority(el, value, cls) {
+        vibrate('light');
+        document.querySelectorAll('.prio-chip').forEach(c => c.classList.remove('active-norm','active-urgent','active-crit'));
+        el.classList.add(cls);
+        document.getElementById('priority').value = value;
+        selectedPriority = value;
+    }
+
+    // ── Dates ──
+    function getFormattedDateTime() {
+        const n = new Date();
+        const pad = v => String(v).padStart(2,'0');
+        return `${pad(n.getDate())}.${pad(n.getMonth()+1)}.${String(n.getFullYear()).slice(-2)}/${pad(n.getHours())}:${pad(n.getMinutes())}`;
+    }
+
+    function formatToShortDate(s) {
+        if (!s) return '';
+        if (s.includes('T')) {
+            const d = new Date(s);
+            return `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getFullYear()).slice(-2)}`;
+        }
+        if (s.includes('-')) {
+            const [y,m,d] = s.split('-');
+            return `${d}.${m}.${y.slice(-2)}`;
+        }
+        return s;
+    }
+
+    // ── Page navigation ──
+    function showPage(id) {
+        vibrate('light');
+        currentPageId = id;
+        updateBackButton(id);
+        document.querySelectorAll('.page-section').forEach(p => { p.classList.add('hidden'); p.classList.remove('animate-fade'); });
+        const pg = document.getElementById(id);
+        pg.classList.remove('hidden');
+        void pg.offsetWidth;
+        pg.classList.add('animate-fade');
+        // Scroll to top on page change
+        window.scrollTo({ top: 0, behavior: 'instant' });
+        if (id === 'page-2') {
+            const fio   = localStorage.getItem('fio') || '';
+            const phone = localStorage.getItem('phone') || '';
+            document.getElementById('user-fio').value   = fio;
+            document.getElementById('user-phone').value = phone;
+            updateProfilePreview();
+        }
+        if (id === 'page-7') renderSummary();
+        if (id === 'page-1') { loadHomeStats(); }
+        if (id === 'page-my-orders-menu') { loadMenuStats(); }
         lucide.createIcons();
+    }
 
-        function getFormattedDateTime() {
-            const now = new Date();
-            const day = String(now.getDate()).padStart(2, '0');
-            const month = String(now.getMonth() + 1).padStart(2, '0');
-            const year = String(now.getFullYear()).slice(-2);
-            const hours = String(now.getHours()).padStart(2, '0');
-            const minutes = String(now.getMinutes()).padStart(2, '0');
-            return `${day}.${month}.${year}/${hours}:${minutes}`;
+    function startNewRequest() { localStorage.getItem('fio') ? showPage('page-3') : showPage('page-2'); }
+    function openProfileFromMenu() { showPage('page-2'); }
+
+    // ── Home stats ──
+    function loadHomeStats() {
+        const phone = localStorage.getItem('phone');
+        if (!phone) return;
+        fetch(WEBHOOK_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: 'get_orders', phone, telegram_id: TELEGRAM_ID }),
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            redirect: 'follow'
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'success' && data.orders) {
+                const active   = data.orders.filter(o => o.status === 'Активна').length;
+                const cancelled = data.orders.filter(o => o.status === 'Скасована').length;
+                const now = new Date();
+                const month = data.orders.filter(o => {
+                    if (!o.timestamp) return false;
+                    const parts = o.timestamp.split('/')[0].split('.');
+                    if (parts.length < 3) return false;
+                    const d = new Date(2000 + parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+                    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+                }).length;
+                document.getElementById('stat-active').textContent  = active;
+                document.getElementById('stat-cancel').textContent  = cancelled;
+                document.getElementById('stat-month').textContent   = month;
+            }
+        })
+        .catch(() => {});
+    }
+
+    // ── Validation ──
+    function validateFields(fieldIds) {
+        let valid = true;
+        fieldIds.forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            if (id === 'other-reason' && document.getElementById('reason').value !== 'Інше') { el.classList.remove('error-input'); return; }
+            let empty = !el.value || el.value.trim() === '' || el.value === 'empty';
+            if (el.type === 'tel' && el.value.length < 16 && !empty) empty = true;
+            if (empty) { el.classList.add('error-input'); valid = false; } else { el.classList.remove('error-input'); }
+        });
+        if (!valid) {
+            vibrate('error');
+            if (tg?.showAlert) tg.showAlert("❗️ Заповніть всі обов'язкові поля коректно!");
+            else alert("❗️ Заповніть всі обов'язкові поля!");
         }
+        return valid;
+    }
 
-        function formatToShortDate(dateString) {
-            if (!dateString) return '';
-            if (dateString.includes('T')) {
-                let d = new Date(dateString);
-                let day = String(d.getDate()).padStart(2, '0');
-                let month = String(d.getMonth() + 1).padStart(2, '0');
-                let year = String(d.getFullYear()).slice(-2);
-                return `${day}.${month}.${year}`;
-            }
-            if (dateString.includes('-')) {
-                let parts = dateString.split('-');
-                return `${parts[2]}.${parts[1]}.${parts[0].slice(-2)}`;
-            }
-            return dateString;
+    function saveProfile() {
+        if (!validateFields(['user-fio','user-phone'])) return;
+        localStorage.setItem('fio', document.getElementById('user-fio').value.trim());
+        localStorage.setItem('phone', document.getElementById('user-phone').value.trim());
+        showPage('page-1');
+    }
+
+    function goToPage4() { if (validateFields(['azk-number','visit-date'])) showPage('page-4'); }
+
+    function goToPage5() {
+        if (!validateFields(['priority','reason','other-reason','target-name'])) return;
+        const phoneEl = document.getElementById('target-phone');
+        if (phoneEl.value.trim() !== '' && phoneEl.value.length < 16) {
+            phoneEl.classList.add('error-input'); vibrate('error');
+            if (tg?.showAlert) tg.showAlert("❗️ Номер не повний. Залиште порожнім або заповніть до кінця!");
+            else alert("❗️ Номер не повний.");
+            return;
         }
+        phoneEl.classList.remove('error-input');
+        showPage('page-5');
+    }
 
-        function showPage(id) {
-            vibrate('light');
-            document.querySelectorAll('.page-section').forEach(p => { p.classList.add('hidden'); p.classList.remove('animate-fade'); });
-            const targetPage = document.getElementById(id);
-            targetPage.classList.remove('hidden'); void targetPage.offsetWidth; targetPage.classList.add('animate-fade');
-            if(id === 'page-2') {
-                document.getElementById('user-fio').value = localStorage.getItem('fio') || '';
-                document.getElementById('user-phone').value = localStorage.getItem('phone') || '';
-            }
-            if(id === 'page-7') renderSummary();
+    function goToPage6() { if (validateFields(['desc'])) showPage('page-6'); }
+    function goToPage7() { if (validateFields(['result'])) showPage('page-7'); }
+
+    function checkOtherReason(sel) {
+        const c = document.getElementById('other-reason-container');
+        sel.value === 'Інше' ? c.classList.remove('hidden') : c.classList.add('hidden');
+    }
+    document.getElementById('reason').addEventListener('change', function() { checkOtherReason(this); });
+
+    function renderSummary() {
+        const finalReason = document.getElementById('reason').value === 'Інше'
+            ? document.getElementById('other-reason').value
+            : document.getElementById('reason').value;
+        document.getElementById('sum-fio').innerText        = localStorage.getItem('fio');
+        document.getElementById('sum-phone').innerText      = localStorage.getItem('phone');
+        document.getElementById('sum-date-created').innerText = getFormattedDateTime();
+        document.getElementById('sum-priority').innerText   = document.getElementById('priority').value;
+        document.getElementById('sum-azk').innerText        = document.getElementById('azk-number').value;
+        document.getElementById('sum-target').innerText     = document.getElementById('target-name').value;
+        const tp = document.getElementById('target-phone').value;
+        document.getElementById('sum-target-phone').innerText = tp || 'Не вказано';
+        document.getElementById('sum-visit-date').innerText = formatToShortDate(document.getElementById('visit-date').value);
+        document.getElementById('sum-reason').innerText     = finalReason;
+        document.getElementById('sum-desc').innerText       = document.getElementById('desc').value;
+        document.getElementById('sum-result').innerText     = document.getElementById('result').value;
+    }
+
+    // ── Submit ──
+    function submitForm() {
+        vibrate('medium');
+        const btn = document.getElementById('btn-submit');
+        btn.innerHTML = '<div class="loader" style="width:20px;height:20px;border-width:2px;margin:0;"></div> Відправка...';
+        btn.disabled = true;
+
+        const finalReason = document.getElementById('reason').value === 'Інше'
+            ? document.getElementById('other-reason').value
+            : document.getElementById('reason').value;
+
+        const payload = {
+            action: 'create',
+            timestamp: document.getElementById('sum-date-created').innerText,
+            fio: localStorage.getItem('fio'),
+            phone: localStorage.getItem('phone'),
+            azk: document.getElementById('azk-number').value,
+            priority: document.getElementById('priority').value,
+            date: formatToShortDate(document.getElementById('visit-date').value),
+            reason: finalReason,
+            target_name: document.getElementById('target-name').value,
+            target_phone: document.getElementById('target-phone').value,
+            desc: document.getElementById('desc').value,
+            result: document.getElementById('result').value,
+            telegram_id: TELEGRAM_ID
+        };
+
+        fetch(WEBHOOK_URL, {
+            method: 'POST',
+            body: JSON.stringify(payload),
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            redirect: 'follow'
+        })
+        .then(r => r.json())
+        .then(data => {
+            vibrate('success');
+            const orderId = data.orderId || '—';
+            document.getElementById('success-order-id').textContent = '№ ' + orderId;
+            // reset
+            resetForm();
+            showPage('page-success');
+        })
+        .catch(() => {
+            vibrate('success');
+            document.getElementById('success-order-id').textContent = '—';
+            resetForm();
+            showPage('page-success');
+        })
+        .finally(() => {
+            btn.innerHTML = '<i data-lucide="send" class="w-4 h-4"></i> Відправити';
+            btn.disabled = false;
             lucide.createIcons();
+        });
+    }
+
+    function resetForm() {
+        ['azk-number','target-name','target-phone','desc','result'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('priority').value  = '🚨 Звичайна';
+        document.getElementById('reason').value    = 'empty';
+        document.getElementById('visit-date').value = '';
+        document.getElementById('other-reason').value = '';
+        document.getElementById('other-reason-container').classList.add('hidden');
+        document.querySelectorAll('.prio-chip').forEach((c,i) => {
+            c.classList.remove('active-norm','active-urgent','active-crit');
+            if (i === 0) c.classList.add('active-norm');
+        });
+    }
+
+    // ── Orders ──
+    function loadOrders(statusFilter) {
+        const phone = localStorage.getItem('phone');
+        if (!phone) {
+            vibrate('warning');
+            if (tg?.showAlert) tg.showAlert("Спочатку заповніть профіль!");
+            else alert("Заповніть профіль!");
+            showPage('page-2'); return;
         }
 
-        function startNewRequest() { localStorage.getItem('fio') ? showPage('page-3') : showPage('page-2'); }
-        function openProfileFromMenu() { showPage('page-2'); }
+        const titles = { 'Активна':'Активні', 'Скасована':'Скасовані', 'Архів':'Архівні' };
+        document.getElementById('orders-list-title').textContent = titles[statusFilter] || statusFilter;
 
-        function validateFields(fieldIds) {
-            let isValid = true;
-            fieldIds.forEach(id => {
-                const el = document.getElementById(id);
-                if (!el) return;
-                if (id === 'other-reason' && document.getElementById('reason').value !== 'Інше') { el.classList.remove('error-input'); return; }
-                let isFieldEmpty = !el.value || el.value.trim() === '' || el.value === 'empty';
-                if (el.type === 'tel' && el.value.length < 16 && !isFieldEmpty) isFieldEmpty = true; 
-                if (isFieldEmpty) { el.classList.add('error-input'); isValid = false; } else { el.classList.remove('error-input'); }
-            });
-            if (!isValid) { 
-                vibrate('error');
-                if(tg && tg.showAlert) tg.showAlert("❗️ Заповніть всі обов'язкові поля коректно!"); else alert("❗️ Заповніть всі обов'язкові поля!"); 
-            }
-            return isValid;
-        }
+        showPage('page-orders-list');
+        document.getElementById('orders-loading').classList.remove('hidden');
+        document.getElementById('orders-container').classList.add('hidden');
+        document.getElementById('orders-container').innerHTML = '';
 
-        function saveProfile() {
-            if (!validateFields(['user-fio', 'user-phone'])) return;
-            localStorage.setItem('fio', document.getElementById('user-fio').value.trim());
-            localStorage.setItem('phone', document.getElementById('user-phone').value.trim());
-            showPage('page-1');
-        }
+        fetch(WEBHOOK_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: 'get_orders', phone, telegram_id: TELEGRAM_ID }),
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            redirect: 'follow'
+        })
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('orders-loading').classList.add('hidden');
+            document.getElementById('orders-container').classList.remove('hidden');
 
-        function goToPage4() { if (validateFields(['azk-number', 'visit-date'])) showPage('page-4'); }
-        
-        function goToPage5() { 
-            if (!validateFields(['priority', 'reason', 'other-reason', 'target-name'])) return;
-            let phoneEl = document.getElementById('target-phone');
-            if (phoneEl.value.trim() !== '' && phoneEl.value.length < 16) {
-                phoneEl.classList.add('error-input');
-                vibrate('error');
-                if(tg && tg.showAlert) tg.showAlert("❗️ Номер співробітника введено не повністю. Залиште порожнім або введіть до кінця!"); 
-                else alert("❗️ Номер співробітника введено не повністю. Залиште порожнім або введіть до кінця!");
-                return;
-            }
-            phoneEl.classList.remove('error-input');
-            showPage('page-5'); 
-        }
-
-        function goToPage6() { if (validateFields(['desc'])) showPage('page-6'); }
-        function goToPage7() { if (validateFields(['result'])) showPage('page-7'); }
-
-        function checkOtherReason(selectObj) {
-            const container = document.getElementById('other-reason-container');
-            selectObj.value === 'Інше' ? container.classList.remove('hidden') : container.classList.add('hidden');
-        }
-
-        document.getElementById('reason').addEventListener('change', function() { checkOtherReason(this); });
-
-        function renderSummary() {
-            let finalReason = document.getElementById('reason').value === 'Інше' ? document.getElementById('other-reason').value : document.getElementById('reason').value;
-            document.getElementById('sum-fio').innerText = localStorage.getItem('fio');
-            document.getElementById('sum-phone').innerText = localStorage.getItem('phone');
-            document.getElementById('sum-date-created').innerText = getFormattedDateTime(); 
-            document.getElementById('sum-priority').innerText = document.getElementById('priority').value;
-            document.getElementById('sum-azk').innerText = document.getElementById('azk-number').value;
-            document.getElementById('sum-target').innerText = document.getElementById('target-name').value;
-            
-            let tPhone = document.getElementById('target-phone').value;
-            document.getElementById('sum-target-phone').innerText = tPhone ? tPhone : "Не вказано";
-            
-            document.getElementById('sum-visit-date').innerText = formatToShortDate(document.getElementById('visit-date').value);
-            document.getElementById('sum-reason').innerText = finalReason;
-            document.getElementById('sum-desc').innerText = document.getElementById('desc').value;
-            document.getElementById('sum-result').innerText = document.getElementById('result').value;
-        }
-
-        function submitForm() {
-            vibrate('medium');
-            const btn = document.getElementById('btn-submit');
-            btn.innerHTML = '<div class="loader !w-5 !h-5 !border-2 !m-0 !border-white/20 !border-t-white"></div> Відправка...'; 
-            btn.disabled = true;
-            let finalReason = document.getElementById('reason').value === 'Інше' ? document.getElementById('other-reason').value : document.getElementById('reason').value;
-            
-            const payload = {
-                action: "create", 
-                timestamp: document.getElementById('sum-date-created').innerText,
-                fio: localStorage.getItem('fio'),
-                phone: localStorage.getItem('phone'),
-                azk: document.getElementById('azk-number').value,
-                priority: document.getElementById('priority').value,
-                date: formatToShortDate(document.getElementById('visit-date').value),
-                reason: finalReason,
-                target_name: document.getElementById('target-name').value,  
-                target_phone: document.getElementById('target-phone').value,  
-                desc: document.getElementById('desc').value,
-                result: document.getElementById('result').value,
-                telegram_id: TELEGRAM_ID
-            };
-
-            fetch(WEBHOOK_URL, { 
-                method: "POST", 
-                body: JSON.stringify(payload), 
-                headers: { "Content-Type": "text/plain;charset=utf-8" }, 
-                redirect: "follow" 
-            })
-            .then(res => res.json())
-            .then(data => {
-                vibrate('success');
-                let successMsg = "✅ Заявка успішно прийнята.\n\n▶️ Заявка знаходиться в меню:\n📌Мої замовлення - Активні";
-                
-                if(tg && tg.showAlert) { 
-                    tg.showAlert(successMsg, function() { showPage('page-1'); }); 
-                } else { 
-                    alert(successMsg); showPage('page-1'); 
+            if (data.status === 'success' && data.orders) {
+                const list = data.orders.filter(o => o.status === statusFilter);
+                if (!list.length) {
+                    document.getElementById('orders-container').innerHTML = `
+                        <div style="text-align:center;padding:48px 16px;color:#475569;">
+                            <div style="font-size:40px;margin-bottom:12px;opacity:0.5;">📭</div>
+                            <p style="font-size:14px;">Заявок у цій категорії немає</p>
+                        </div>`;
+                    lucide.createIcons(); return;
                 }
-                
-                document.getElementById('azk-number').value = ''; 
-                document.getElementById('target-name').value = ''; 
-                document.getElementById('target-phone').value = ''; 
-                document.getElementById('desc').value = ''; 
-                document.getElementById('result').value = ''; 
-                document.getElementById('priority').value = 'empty'; 
-                document.getElementById('reason').value = 'empty'; 
-                document.getElementById('visit-date').value = '';
-                document.getElementById('other-reason').value = '';
-                document.getElementById('other-reason-container').classList.add('hidden');
-            })
-            .catch(() => { 
-                vibrate('success'); 
-                alert("✅ Заявку успішно відправлено!"); 
-                showPage('page-1'); 
-                document.getElementById('other-reason-container').classList.add('hidden');
-            })
-            .finally(() => { 
-                btn.innerHTML = '<i data-lucide="send" class="w-5 h-5"></i> Відправити'; 
-                btn.disabled = false; 
-                lucide.createIcons();
-                setTimeout(() => { showPage('page-1'); }, 4000);
-            });
-        }
 
-        function loadOrders(statusFilter) {
-            const phone = localStorage.getItem('phone');
-            if (!phone) {
-                vibrate('warning');
-                if(tg && tg.showAlert) tg.showAlert("Спочатку заповніть профіль, щоб бачити свої заявки!"); else alert("Заповніть профіль!");
-                showPage('page-2'); return;
-            }
+                list.forEach(o => {
+                    const stripeColor = statusFilter === 'Активна' ? '#10b981' : (statusFilter === 'Скасована' ? '#ef4444' : '#475569');
+                    const badge = statusFilter === 'Активна'
+                        ? `<span class="badge badge-active">● Активна</span>`
+                        : statusFilter === 'Скасована'
+                            ? `<span class="badge badge-cancel">✕ Скасована</span>`
+                            : `<span class="badge badge-archive">◎ Архів</span>`;
 
-            let titleIcon = statusFilter === 'Active' || statusFilter === 'Активна' ? '<i data-lucide="activity" class="text-emerald-400"></i>' : (statusFilter === 'Скасована' ? '<i data-lucide="x-octagon" class="text-red-400"></i>' : '<i data-lucide="archive" class="text-slate-400"></i>');
-            document.getElementById('orders-list-title').innerHTML = `${titleIcon} ${statusFilter}`;
-            
-            showPage('page-orders-list');
-            document.getElementById('orders-loading').classList.remove('hidden');
-            document.getElementById('orders-container').classList.add('hidden');
-            document.getElementById('orders-container').innerHTML = '';
+                    const tPhoneChip = o.target_phone && o.target_phone !== 'Не вказано'
+                        ? `<div class="order-chip">📞 <span>${o.target_phone}</span></div>` : '';
 
-            const payload = { action: "get_orders", phone: phone, telegram_id: TELEGRAM_ID };
-
-            fetch(WEBHOOK_URL, { 
-                method: "POST", 
-                body: JSON.stringify(payload), 
-                headers: { "Content-Type": "text/plain;charset=utf-8" }, 
-                redirect: "follow" 
-            })
-            .then(res => res.json())
-            .then(data => {
-                document.getElementById('orders-loading').classList.add('hidden');
-                document.getElementById('orders-container').classList.remove('hidden');
-
-                if (data.status === "success" && data.orders) {
-                    const filteredOrders = data.orders.filter(o => o.status === statusFilter);
-                    if (filteredOrders.length === 0) {
-                        document.getElementById('orders-container').innerHTML = `
-                            <div class="text-center text-slate-400 mt-10 p-6 glass rounded-2xl flex flex-col items-center">
-                                <i data-lucide="folder-open" class="w-12 h-12 mb-3 opacity-50"></i>
-                                <p>У вас немає заявок у цій категорії.</p>
+                    let extra = '';
+                    if (statusFilter === 'Скасована') {
+                        extra = `
+                            <div class="order-cancel-block">
+                                <div style="display:flex;align-items:center;gap:6px;color:#f87171;font-weight:700;font-size:13px;margin-bottom:4px;"><i data-lucide="x-circle" class="w-4 h-4"></i> Скасовано ${o.cancel_date || ''}</div>
+                            </div>
+                            <button onclick="openOrderDetail(${JSON.stringify(o).replace(/"/g,'&quot;')})" class="btn-primary" style="width:100%;margin-top:10px;font-size:13px;padding:11px;background:linear-gradient(135deg,rgba(59,130,246,0.15),rgba(16,185,129,0.1));border:1px solid rgba(59,130,246,0.25);box-shadow:none;">
+                                <i data-lucide="eye" class="w-4 h-4"></i> Детально
+                            </button>`;
+                    } else if (statusFilter === 'Активна') {
+                        extra = `
+                            <div class="order-divider"></div>
+                            <div class="order-field-label">Причина виклику:</div>
+                            <div class="order-field-value" style="margin-bottom:12px;">${o.reason}</div>
+                            <div style="display:flex;gap:8px;">
+                                <button onclick="openOrderDetail(${JSON.stringify(o).replace(/"/g,'&quot;')})" class="btn-primary" style="flex:1;font-size:13px;padding:11px;background:linear-gradient(135deg,rgba(59,130,246,0.2),rgba(16,185,129,0.15));border:1px solid rgba(59,130,246,0.3);box-shadow:none;">
+                                    <i data-lucide="eye" class="w-4 h-4"></i> Детально
+                                </button>
+                                <button onclick="openCancelPage('${o.orderId}')" class="btn-primary btn-danger" style="flex:1;font-size:13px;padding:11px;">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i> Скасувати
+                                </button>
                             </div>`;
-                        lucide.createIcons();
-                        return;
                     }
 
-                    filteredOrders.forEach(o => {
-                        let cardHtml = '';
-                        let tPhoneDisplay = o.target_phone && o.target_phone !== "Не вказано" ? `<p class="flex gap-2"><i data-lucide="phone" class="w-4 h-4 text-slate-400 mt-0.5"></i> <span>${o.target_phone}</span></p>` : '';
-                        
-                        if (statusFilter === 'Скасована') {
-                            cardHtml = `
-                                <div class="glass p-5 rounded-2xl border border-red-500/20 shadow-lg break-words text-[14px] relative animate-fade">
-                                    <div class="font-bold text-emerald-400 mb-4 text-base flex justify-between items-start">
-                                        <span>№ ${o.orderId}</span>
-                                        <span class="text-slate-500 text-xs font-normal bg-red-500/10 px-2 py-1 rounded-md">${o.timestamp}</span>
-                                    </div>
-                                    <div class="space-y-2.5 text-slate-200">
-                                        <p class="flex gap-2"><i data-lucide="map-pin" class="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0"></i> <span>${o.azk}</span></p>
-                                        <p class="flex gap-2"><i data-lucide="users" class="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0"></i> <span>${o.target_name}</span></p>
-                                        ${tPhoneDisplay}
-                                        <p class="flex gap-2"><i data-lucide="calendar" class="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0"></i> <span class="text-blue-300 font-semibold">${formatToShortDate(o.date)}</span></p>
-                                    </div>
-                                    <div class="my-4 border-b border-white/5"></div>
-                                    <div class="bg-red-950/30 p-4 rounded-xl border border-red-500/10 relative">
-                                        <div class="flex items-center gap-2 text-red-400 font-bold mb-1"><i data-lucide="x-circle" class="w-4 h-4"></i> Скасовано</div>
-                                        <p class="text-xs text-slate-500 mb-3">${o.cancel_date || '-'}</p>
-                                        <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold mb-1">Причина скасування:</p>
-                                        <p class="italic text-slate-300 text-[13px] leading-relaxed">${o.cancel_reason || '-'}</p>
-                                    </div>
+                    document.getElementById('orders-container').innerHTML += `
+                        <div class="order-card animate-fade">
+                            <div class="order-card-stripe" style="background:${stripeColor};"></div>
+                            <div class="order-card-body">
+                                <div class="order-card-head">
+                                    <div class="order-id">№ ${o.orderId}</div>
+                                    ${badge}
                                 </div>
-                            `;
-                        } else {
-                            let btnHtml = '';
-                            if (statusFilter === 'Active' || statusFilter === 'Активна') {
-                                btnHtml = `<button onclick="openCancelPage('${o.orderId}')" class="w-full bg-slate-800 border border-red-500/30 hover:bg-red-900/40 hover:border-red-500/50 text-red-400 rounded-xl p-3 mt-5 font-semibold transition-all active:scale-95 flex justify-center items-center gap-2"><i data-lucide="trash-2" class="w-4 h-4"></i> Скасувати заявку</button>`;
-                            }
-                            cardHtml = `
-                                <div class="glass p-5 rounded-2xl border border-white/10 shadow-lg break-words text-[14px] relative animate-fade">
-                                    <div class="font-bold text-emerald-400 mb-4 text-base flex justify-between items-start">
-                                        <span>№ ${o.orderId}</span>
-                                        <span class="text-slate-500 text-xs font-normal bg-white/5 px-2 py-1 rounded-md">${o.timestamp}</span>
-                                    </div>
-                                    <div class="space-y-2.5 text-slate-200">
-                                        <p class="flex gap-2"><i data-lucide="map-pin" class="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0"></i> <span><span class="text-slate-500">АЗК:</span> ${o.azk}</span></p>
-                                        <p class="flex gap-2"><i data-lucide="users" class="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0"></i> <span><span class="text-slate-500">Працювати з:</span> ${o.target_name}</span></p>
-                                        ${tPhoneDisplay}
-                                        <div class="flex gap-2 items-center bg-white/5 p-2 rounded-lg mt-2">
-                                            <i data-lucide="calendar" class="w-4 h-4 text-blue-400"></i>
-                                            <span class="text-slate-400 text-xs">Планована дата візиту:</span>
-                                            <span class="text-blue-300 font-bold">${formatToShortDate(o.date)}</span>
-                                        </div>
-                                    </div>
-                                    <div class="my-4 border-b border-white/5"></div>
-                                    <div class="text-slate-200 space-y-3">
-                                        <p><span class="text-xs text-slate-400 uppercase tracking-wider font-semibold block mb-1">Причина виклику:</span> ${o.reason}</p>
-                                        <p><span class="text-xs text-slate-400 uppercase tracking-wider font-semibold block mb-1">Опис ситуації:</span> <span class="italic text-slate-300 line-clamp-3 leading-relaxed">${o.desc}</span></p>
-                                    </div>
-                                    ${btnHtml}
+                                <div class="order-chips">
+                                    <div class="order-chip">📍 АЗК <span>${o.azk}</span></div>
+                                    <div class="order-chip">📅 <span>${formatToShortDate(o.date)}</span></div>
+                                    <div class="order-chip">👤 <span>${o.target_name}</span></div>
+                                    ${tPhoneChip}
                                 </div>
-                            `;
-                        }
-                        document.getElementById('orders-container').innerHTML += cardHtml;
-                    });
-                    lucide.createIcons();
-                } else {
-                     if(tg && tg.showAlert) tg.showAlert("Помилка бази даних."); else alert("Помилка бази даних.");
-                }
-            })
-            .catch(() => { 
-                document.getElementById('orders-loading').innerHTML = `<div class="text-center p-6"><i data-lucide="wifi-off" class="w-10 h-10 text-red-500 mx-auto mb-3"></i><p class="text-red-400">Помилка з'єднання або завантаження даних.</p></div>`; 
+                                ${extra}
+                            </div>
+                        </div>`;
+                });
                 lucide.createIcons();
-            });
-        }
-
-        function openCancelPage(orderId) {
-            vibrate('medium');
-            currentCancellingOrderId = orderId;
-            document.getElementById('cancel-reason-text').value = '';
-            document.getElementById('cancel-reason-text').classList.remove('error-input');
-            showPage('page-cancel-reason');
-        }
-
-        function submitCancellation() {
-            const reasonField = document.getElementById('cancel-reason-text');
-            const reasonVal = reasonField.value.trim();
-            if(!reasonVal) {
-                vibrate('error');
-                reasonField.classList.add('error-input');
-                if(tg && tg.showAlert) tg.showAlert("❗️ Детально поясніть причину скасування візиту"); else alert("❗️ Детально поясніть причину скасування візиту");
-                return;
+            } else {
+                if (tg?.showAlert) tg.showAlert("Помилка завантаження.");
+                else alert("Помилка завантаження.");
             }
-            
-            vibrate('light');
-            document.getElementById('orders-container').innerHTML = `<div class="text-center text-slate-400 py-10 glass rounded-2xl"><div class="loader"></div><p id="cancel-status-text">Оновлення статусу заявки...</p></div>`;
-            showPage('page-orders-list');
-            
-            const payload = { action: "cancel_order", orderId: currentCancellingOrderId, cancel_reason: reasonVal };
-
-            fetch(WEBHOOK_URL, { 
-                method: "POST", 
-                body: JSON.stringify(payload), 
-                headers: { "Content-Type": "text/plain;charset=utf-8" }, 
-                redirect: "follow" 
-            })
-            .then(res => res.json())
-            .then(data => {
-                vibrate('warning');
-                let alertMsg = "❌ Заявка скасована\n⚠️ Заявку переміщено в розділ скасованих!";
-                
-                let statusText = document.getElementById('cancel-status-text');
-                if (statusText) statusText.innerText = "Успішно скасовано!";
-                
-                if(tg && tg.showAlert) { 
-                    tg.showAlert(alertMsg, function() { loadOrders('Активна'); }); 
-                } else { 
-                    alert(alertMsg); loadOrders('Активна'); 
-                }
-            })
-            .catch((error) => { 
-                vibrate('warning'); 
-                let statusText = document.getElementById('cancel-status-text');
-                if (statusText) statusText.innerText = "Успішно скасовано!";
-
-                let alertMsgFallback = "❌ Заявка скасована\n⚠️ Заявку переміщено в розділ скасованих!";
-                if(tg && tg.showAlert) { 
-                    tg.showAlert(alertMsgFallback, function() { loadOrders('Активна'); }); 
-                } else { 
-                    alert(alertMsgFallback); loadOrders('Активна'); 
-                }
-            })
-            .finally(() => {
-                setTimeout(() => {
-                    const container = document.getElementById('orders-container');
-                    if (container && container.innerHTML.includes('loader')) { loadOrders('Активна'); }
-                }, 5000);
-            });
-        }
-
-        function applyPhoneMask(e) {
-            let val = e.target.value.replace(/\D/g, ''); 
-            if (val.startsWith('38')) val = val.slice(2); 
-            if (val.length > 10) val = val.substring(0, 10);
-
-            let res = '38';
-            if (val.length > 0) res += ' ' + val.substring(0, 3);
-            if (val.length >= 4) res += ' ' + val.substring(3, 6);
-            if (val.length >= 7) res += ' ' + val.substring(6, 8);
-            if (val.length >= 9) res += ' ' + val.substring(8, 10);
-            e.target.value = res.trim(); e.target.classList.remove('error-input');
-        }
-
-        document.getElementById('user-phone').addEventListener('input', applyPhoneMask);
-        document.getElementById('target-phone').addEventListener('input', applyPhoneMask);
-        document.querySelectorAll('input, select, textarea').forEach(el => {
-            el.addEventListener('input', function() { this.classList.remove('error-input'); });
-            el.addEventListener('change', function() { this.classList.remove('error-input'); });
+        })
+        .catch(() => {
+            document.getElementById('orders-loading').innerHTML = `
+                <div style="text-align:center;padding:32px;">
+                    <div style="font-size:36px;margin-bottom:10px;">📡</div>
+                    <p style="color:#f87171;font-size:13px;">Помилка з'єднання</p>
+                </div>`;
         });
-    </script>
+    }
+
+    function openOrderDetail(o) {
+        vibrate('light');
+        const isActive   = o.status === 'Активна';
+        const isCanceled = o.status === 'Скасована';
+
+        // Stripe color
+        const stripeColor = isActive ? '#10b981' : (isCanceled ? '#ef4444' : '#475569');
+        document.getElementById('detail-stripe').style.background = stripeColor;
+
+        // ID & badge
+        document.getElementById('detail-id').textContent = '№ ' + o.orderId;
+        document.getElementById('detail-id').style.color = isActive ? '#34d399' : (isCanceled ? '#f87171' : '#94a3b8');
+        const badgeHtml = isActive
+            ? `<span class="badge badge-active">● Активна</span>`
+            : isCanceled
+                ? `<span class="badge badge-cancel">✕ Скасована</span>`
+                : `<span class="badge badge-archive">◎ Архів</span>`;
+        document.getElementById('detail-badge').innerHTML = badgeHtml;
+
+        // Chips
+        const tPhoneChip = o.target_phone && o.target_phone !== 'Не вказано'
+            ? `<div class="order-chip">📞 <span>${o.target_phone}</span></div>` : '';
+        document.getElementById('detail-chips').innerHTML = `
+            <div class="order-chip">📍 АЗК <span>${o.azk}</span></div>
+            <div class="order-chip">📅 <span>${formatToShortDate(o.date)}</span></div>
+            <div class="order-chip">👤 <span>${o.target_name}</span></div>
+            ${tPhoneChip}
+            <div class="order-chip" style="background:rgba(255,255,255,0.03);font-size:10px;color:#94a3b8;">🕐 <span style="color:#64748b;">${o.timestamp || ''}</span></div>`;
+
+        // Fields
+        document.getElementById('detail-fio').textContent         = o.fio || '—';
+        document.getElementById('detail-priority').textContent    = o.priority || '—';
+        document.getElementById('detail-date').textContent        = formatToShortDate(o.date);
+        document.getElementById('detail-reason').textContent      = o.reason || '—';
+        document.getElementById('detail-desc').textContent        = o.desc || '—';
+        document.getElementById('detail-result').textContent      = o.result || '—';
+
+        // Cancel block
+        const cancelBlock = document.getElementById('detail-cancel-block');
+        if (isCanceled) {
+            cancelBlock.classList.remove('hidden');
+            document.getElementById('detail-cancel-date').innerHTML = `<i data-lucide="x-circle" class="w-4 h-4"></i> Скасовано ${o.cancel_date || ''}`;
+            document.getElementById('detail-cancel-reason').textContent = o.cancel_reason || '—';
+        } else {
+            cancelBlock.classList.add('hidden');
+        }
+
+        // Cancel button (only for active)
+        const btnWrap = document.getElementById('detail-cancel-btn-wrap');
+        if (isActive) {
+            btnWrap.innerHTML = `<button onclick="openCancelPage('${o.orderId}')" class="btn-primary btn-danger" style="width:100%;margin-bottom:20px;">
+                <i data-lucide="trash-2" class="w-4 h-4"></i> Скасувати заявку
+            </button>`;
+        } else {
+            btnWrap.innerHTML = '';
+        }
+
+        showPage('page-order-detail');
+        lucide.createIcons();
+    }
+
+    function openCancelPage(orderId) {
+        vibrate('medium');
+        currentCancellingOrderId = orderId;
+        document.getElementById('cancel-reason-text').value = '';
+        document.getElementById('cancel-reason-text').classList.remove('error-input');
+        showPage('page-cancel-reason');
+    }
+
+    function submitCancellation() {
+        const field = document.getElementById('cancel-reason-text');
+        if (!field.value.trim()) {
+            vibrate('error'); field.classList.add('error-input');
+            if (tg?.showAlert) tg.showAlert("❗️ Детально поясніть причину скасування");
+            else alert("❗️ Детально поясніть причину скасування");
+            return;
+        }
+        vibrate('light');
+
+        // Show loader on orders list
+        document.getElementById('orders-loading').classList.remove('hidden');
+        document.getElementById('orders-container').classList.add('hidden');
+        showPage('page-orders-list');
+
+        const cancelledId = currentCancellingOrderId;
+
+        fetch(WEBHOOK_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: 'cancel_order', orderId: cancelledId, cancel_reason: field.value.trim() }),
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            redirect: 'follow'
+        })
+        .then(r => r.json())
+        .then(() => {
+            vibrate('warning');
+            document.getElementById('cancel-success-order-id').textContent = '№ ' + cancelledId;
+            showPage('page-cancel-success');
+        })
+        .catch(() => {
+            vibrate('warning');
+            document.getElementById('cancel-success-order-id').textContent = '№ ' + cancelledId;
+            showPage('page-cancel-success');
+        });
+    }
+
+    // ── Phone mask ──
+    function applyPhoneMask(e) {
+        const el = e.target;
+        // Strip everything except digits
+        let digits = el.value.replace(/\D/g, '');
+        // Remove leading 38 if present (we'll re-add it)
+        if (digits.startsWith('380')) digits = digits.slice(2);
+        else if (digits.startsWith('38')) digits = digits.slice(2);
+        else if (digits.startsWith('0')) digits = digits.slice(1); // allow typing 0XX...
+        // Strict max 9 digits after leading 0 (operator code 3 + number 7) → actually 10 digits for UA number
+        if (digits.length > 10) digits = digits.substring(0, 10);
+        // Format: 38 0XX XXX XX XX
+        let result = '38';
+        if (digits.length > 0) result += ' ' + (digits[0] !== '0' ? '0' : '') + digits.substring(digits[0] !== '0' ? 0 : 1, digits[0] !== '0' ? 2 : 3);
+        // simpler approach:
+        digits = digits.replace(/^0/, ''); // remove leading zero from remaining
+        result = '38';
+        const local = digits;
+        if (local.length > 0) result += ' 0' + local.substring(0, 2);
+        if (local.length >= 3) result += ' ' + local.substring(2, 5);
+        if (local.length >= 6) result += ' ' + local.substring(5, 7);
+        if (local.length >= 8) result += ' ' + local.substring(7, 9);
+        el.value = result.trim();
+        el.classList.remove('error-input');
+    }
+
+    function initPhoneField(el) {
+        el.addEventListener('focus', function() {
+            if (!this.value || this.value.trim() === '') {
+                this.value = '38 0';
+                // Move cursor to end
+                setTimeout(() => { this.selectionStart = this.selectionEnd = this.value.length; }, 0);
+            }
+        });
+        el.addEventListener('keydown', function(e) {
+            // Prevent deleting the "38 0" prefix
+            const minLen = 4; // "38 0"
+            if ((e.key === 'Backspace' || e.key === 'Delete') && this.value.length <= minLen) {
+                e.preventDefault();
+            }
+        });
+        el.addEventListener('input', applyPhoneMask);
+        el.setAttribute('maxlength', '18'); // "38 0XX XXX XX XX" = 16 chars + buffer
+    }
+
+    initPhoneField(document.getElementById('user-phone'));
+    initPhoneField(document.getElementById('target-phone'));
+    document.querySelectorAll('input, select, textarea').forEach(el => {
+        el.addEventListener('input', function() { this.classList.remove('error-input'); });
+        el.addEventListener('change', function() { this.classList.remove('error-input'); });
+    });
+
+    // ── Menu stats (orders menu page) ──
+    function loadMenuStats() {
+        const phone = localStorage.getItem('phone');
+        if (!phone) return;
+        fetch(WEBHOOK_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: 'get_orders', phone, telegram_id: TELEGRAM_ID }),
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            redirect: 'follow'
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'success' && data.orders) {
+                const a = data.orders.filter(o => o.status === 'Активна').length;
+                const c = data.orders.filter(o => o.status === 'Скасована').length;
+                const r = data.orders.filter(o => o.status === 'Архів').length;
+                document.getElementById('menu-stat-active').textContent  = a;
+                document.getElementById('menu-stat-cancel').textContent  = c;
+                document.getElementById('menu-stat-archive').textContent = r;
+            }
+        })
+        .catch(() => {});
+    }
+
+    // ── Boot ──
+    if (tg) { tg.ready(); } // сигнал що WebApp готовий
+    updateBackButton('page-1');
+    loadHomeStats();
+</script>
 </body>
 </html>
