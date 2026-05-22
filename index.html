@@ -974,7 +974,7 @@
     }
 
     // ══════════════════════════════════════════
-    // iOS FIX: Dismiss keyboard before any button action
+    // iOS FIX: Кнопки працюють при відкритій клавіатурі
     // ══════════════════════════════════════════
     function dismissKeyboard() {
         const el = document.activeElement;
@@ -983,14 +983,32 @@
         }
     }
 
-    // Global touchstart on ALL buttons — blur immediately on finger down
-    // This ensures keyboard is gone before the tap action fires
-    document.addEventListener('touchstart', function(e) {
-        const btn = e.target.closest('button, [onclick], .btn-primary, .sec-tile, .main-cta, .menu-item, .prio-chip, .stat-tile');
-        if (btn) dismissKeyboard();
-    }, { passive: true });
+    // iOS баг: коли клавіатура відкрита і натискаєш кнопку —
+    // iOS закриває клавіатуру, сторінка зміщується, click потрапляє в порожнечу.
+    // Рішення: перехоплюємо touchend, скасовуємо "призрачний" click,
+    // закриваємо клавіатуру і вручну запускаємо кнопку через 80ms
+    // (після того як layout стабілізується).
+    document.addEventListener('touchend', function(e) {
+        const btn = e.target.closest('button');
+        if (!btn || btn.disabled) return;
 
-    // ── iOS: прибрати клавіатуру при тапі поза input ──
+        const keyboardWasOpen = document.activeElement &&
+            (document.activeElement.tagName === 'INPUT' ||
+             document.activeElement.tagName === 'TEXTAREA');
+
+        if (keyboardWasOpen) {
+            e.preventDefault();   // скасовуємо зміщений ghost-click
+            e.stopPropagation();
+            dismissKeyboard();    // закриваємо клавіатуру
+            setTimeout(() => {    // чекаємо поки layout стабілізується
+                if (!btn.disabled) btn.click();
+            }, 80);
+        } else {
+            dismissKeyboard();    // просто blur якщо клавіатура вже закрита
+        }
+    }, { passive: false });
+
+    // ── iOS: фокус на input — скрол щоб поле не ховалось за клавіатурою ──
     document.addEventListener('touchstart', function(e) {
         if (!e.target.closest('input, textarea, select')) {
             document.activeElement?.blur();
