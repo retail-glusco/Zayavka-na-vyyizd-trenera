@@ -973,6 +973,23 @@
         }
     }
 
+    // ══════════════════════════════════════════
+    // iOS FIX: Dismiss keyboard before any button action
+    // ══════════════════════════════════════════
+    function dismissKeyboard() {
+        const el = document.activeElement;
+        if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT')) {
+            el.blur();
+        }
+    }
+
+    // Global touchstart on ALL buttons — blur immediately on finger down
+    // This ensures keyboard is gone before the tap action fires
+    document.addEventListener('touchstart', function(e) {
+        const btn = e.target.closest('button, [onclick], .btn-primary, .sec-tile, .main-cta, .menu-item, .prio-chip, .stat-tile');
+        if (btn) dismissKeyboard();
+    }, { passive: true });
+
     // ── iOS: прибрати клавіатуру при тапі поза input ──
     document.addEventListener('touchstart', function(e) {
         if (!e.target.closest('input, textarea, select')) {
@@ -1117,15 +1134,17 @@
     }
 
     function saveProfile() {
+        dismissKeyboard();
         if (!validateFields(['user-fio','user-phone'])) return;
         localStorage.setItem('fio', document.getElementById('user-fio').value.trim());
         localStorage.setItem('phone', document.getElementById('user-phone').value.trim());
         showPage('page-1');
     }
 
-    function goToPage4() { if (validateFields(['azk-number','visit-date'])) showPage('page-4'); }
+    function goToPage4() { dismissKeyboard(); if (validateFields(['azk-number','visit-date'])) showPage('page-4'); }
 
     function goToPage5() {
+        dismissKeyboard();
         if (!validateFields(['priority','reason','other-reason','target-name'])) return;
         const phoneEl = document.getElementById('target-phone');
         if (phoneEl.value.trim() !== '' && phoneEl.value.length < 16) {
@@ -1138,8 +1157,8 @@
         showPage('page-5');
     }
 
-    function goToPage6() { if (validateFields(['desc'])) showPage('page-6'); }
-    function goToPage7() { if (validateFields(['result'])) showPage('page-7'); }
+    function goToPage6() { dismissKeyboard(); if (validateFields(['desc'])) showPage('page-6'); }
+    function goToPage7() { dismissKeyboard(); if (validateFields(['result'])) showPage('page-7'); }
 
     function checkOtherReason(sel) {
         const c = document.getElementById('other-reason-container');
@@ -1167,6 +1186,7 @@
 
     // ── Submit ──
     function submitForm() {
+        dismissKeyboard();
         vibrate('medium');
         const btn = document.getElementById('btn-submit');
         btn.innerHTML = '<div class="loader" style="width:20px;height:20px;border-width:2px;margin:0;"></div> Відправка...';
@@ -1411,6 +1431,7 @@
     }
 
     function submitCancellation() {
+        dismissKeyboard();
         const field = document.getElementById('cancel-reason-text');
         if (!field.value.trim()) {
             vibrate('error'); field.classList.add('error-input');
